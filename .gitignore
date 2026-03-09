@@ -29,3 +29,7 @@ dist-ssr
 /frontend/.vscode/*
 /frontend/package-lock.json
 
+/backend/node_modules
+/backend/dist
+/backend/.vscode/*
+/backend/package-lock.json

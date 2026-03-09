@@ -1,0 +1,26 @@
+{
+  "name": "mark.it-backend",
+  "version": "1.0.0",
+  "description": "mark.it backend",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start" : "ts-node app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Noah Miller 20014855",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
