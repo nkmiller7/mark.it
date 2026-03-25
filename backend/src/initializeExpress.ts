@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
-import configRoutes from "./routes/index";
+
+import { configRoutes } from "@/routes/index";
 
 const expressApp = express();
 
@@ -10,4 +11,4 @@ expressApp.use(express.urlencoded({ extended: true }));
 
 configRoutes(expressApp);
 
-export default expressApp;
+export { expressApp };

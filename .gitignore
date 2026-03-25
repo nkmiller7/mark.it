@@ -33,3 +33,4 @@ dist-ssr
 /backend/dist
 /backend/.vscode/*
 /backend/package-lock.json
+/backend/firebase-adminsdk.json
