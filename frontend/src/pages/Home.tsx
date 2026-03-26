@@ -1,7 +1,25 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
   const { currentUser, signOut } = useAuth();
+  const [authStatus, setAuthStatus] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await currentUser?.getIdToken();
+        const res = await fetch('/api/auth/check', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
+        });
+        setAuthStatus(res.ok);
+      } catch {
+        setAuthStatus(false);
+      }
+    };
+    checkAuth();
+  }, [currentUser]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
@@ -9,7 +27,7 @@ export default function Home() {
         Welcome to mark<span className="text-blue-600">.it</span>
       </h1>
       <p className="mt-2 text-gray-600">
-        Signed in as {currentUser?.email}
+        Signed in as {currentUser?.email} - Backend says: {authStatus === null ? 'Checking...' : authStatus ? 'Authenticated' : 'Not Authenticated'}
       </p>
       <button
         onClick={signOut}
