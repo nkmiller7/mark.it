@@ -5,7 +5,7 @@
         "pretty": true,
         "target": "ES6",
         "outDir": "./dist",
-        "baseUrl": "./dist",
+        "baseUrl": "./src",
         "paths": {
             "@/*": ["*"]
         },

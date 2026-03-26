@@ -20,8 +20,9 @@ const authMiddleware = {
             const [bearerKeyword, idToken] = authHeader.split(" ");
             if (bearerKeyword !== "Bearer")
                 return res.status(401).json({ error: "Unauthorized request." });
-            (req as AuthenticatedRequest).user.token =
-                await firebaseAuth.verifyIdToken(idToken);
+            (req as AuthenticatedRequest).user = {
+                token: await firebaseAuth.verifyIdToken(idToken),
+            };
             return next();
         } catch (e) {
             return res.status(401).json({ error: "Unauthorized request." });

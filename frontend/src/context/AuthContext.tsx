@@ -49,21 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Account created on backend now making client session
     await signInWithEmailAndPassword(auth, email, password);
+    await firebaseSignOut(auth); 
   }
 
   async function signIn(email: string, password: string) {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || 'Login failed.');
-    }
-
-    // Backend validated now making client session
     await signInWithEmailAndPassword(auth, email, password);
   }
 
