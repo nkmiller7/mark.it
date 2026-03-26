@@ -5,10 +5,13 @@
         "pretty": true,
         "target": "ES6",
         "outDir": "./dist",
-        "baseUrl": "./src",
+        "baseUrl": "./dist",
+        "paths": {
+            "@/*": ["*"]
+        },
         "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
+        "esModuleInterop": true
     },
     "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"],
+    "exclude": ["node_modules"]
 }

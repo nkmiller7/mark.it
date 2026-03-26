@@ -1,11 +1,12 @@
-import express from "express";
-import authRoutes from "./auth";
+import { Express, Request, Response } from "express";
 
-const configRoutes = (app: express.Express): void => {
+import { authRoutes } from "@/routes/auth";
+
+const configRoutes = (app: Express): void => {
     app.use("/api/auth", authRoutes);
-    app.use("{*splat}", (req: express.Request, res: express.Response) => {
+    app.use("{*splat}", (req: Request, res: Response) => {
         res.status(404).json({ error: "Not found." });
     });
 };
 
-export default configRoutes;
+export { configRoutes };
