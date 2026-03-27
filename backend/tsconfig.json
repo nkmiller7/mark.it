@@ -2,15 +2,15 @@
     "compilerOptions": {
         "module": "commonjs",
         "moduleResolution": "node",
-        "pretty": true,
         "target": "ES6",
         "outDir": "./dist",
-        "baseUrl": "./dist",
+        "baseUrl": "./src",
         "paths": {
             "@/*": ["*"]
         },
         "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "sourceMap": true
     },
     "include": ["src/**/*.ts"],
     "exclude": ["node_modules"]
