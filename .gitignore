@@ -28,6 +28,7 @@ dist-ssr
 /frontend/dist-ssr
 /frontend/.vscode/*
 /frontend/package-lock.json
+/frontend/.env
 
 /backend/node_modules
 /backend/dist
@@ -35,3 +36,4 @@ dist-ssr
 /backend/package-lock.json
 /backend/firebase-adminsdk.json
 /backend/.env
+/backend/firebase-adminsdk.json
