@@ -1,9 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 
+import { DecodedIdToken } from "firebase-admin/auth";
+
 import { firebaseApp } from "@/initializeFirebase";
 import { getAuth } from "firebase-admin/auth";
 
-import { AuthenticatedRequest } from "@/routes/auth";
+interface AuthenticatedRequest extends Request {
+    user: {
+        token: DecodedIdToken;
+    };
+}
 
 const firebaseAuth = getAuth(firebaseApp);
 
@@ -30,4 +36,4 @@ const authMiddleware = {
     },
 };
 
-export { authMiddleware };
+export { authMiddleware, AuthenticatedRequest };
