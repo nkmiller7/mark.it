@@ -170,8 +170,8 @@ const validationMethods = {
                         const reviewerUser: ReviewerUserDocument = {
                             email: user.email,
                             type: user.type,
-                            firstName: validationMethods.user.firstName(user.firstName),
-                            lastName: validationMethods.user.lastName(user.lastName),
+                            firstName: validationMethods.user.firstName(body.firstName),
+                            lastName: validationMethods.user.lastName(body.lastName),
                         }
                         return reviewerUser;
                     }
