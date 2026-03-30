@@ -13,10 +13,12 @@ interface OwnerUserDocument extends UserDocument {
 interface LabelerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
+    rating: number;
 }
 interface ReviewerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
+    rating: number;
 }
 
 const userDataMethods = {
@@ -39,7 +41,9 @@ const userDataMethods = {
         return user.type === "reviewer";
     },
 
-    createUser: async <T extends UserDocument>(user: T): Promise<ObjectId> => {
+    createUser: async (
+        user: OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument,
+    ): Promise<ObjectId> => {
         user.email = validationMethods.user.email(user.email);
         if (await userDataMethods.doesEmailExist(user.email))
             throw new DataError(400, "Email is already in use by a user.");
@@ -89,6 +93,25 @@ const userDataMethods = {
                 return insertInfo.insertedId;
             }
         }
+    },
+
+    getUserByEmail: async (
+        email: string,
+    ): Promise<
+        | WithId<OwnerUserDocument>
+        | WithId<LabelerUserDocument>
+        | WithId<ReviewerUserDocument>
+    > => {
+        email = validationMethods.user.email(email);
+        const usersCol = await usersCollection<
+            OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
+        >();
+        const user = await usersCol.findOne({
+            email: { $regex: email, $options: "i" },
+        });
+        if (user === null)
+            throw new DataError(404, "No user found with the provided email.");
+        return user;
     },
 };
 

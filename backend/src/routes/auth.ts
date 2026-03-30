@@ -2,22 +2,21 @@ import { Router, Request, Response } from "express";
 
 import { firebaseApp } from "@/initializeFirebase";
 import { getAuth } from "firebase-admin/auth";
-import { FirebaseAuthError, DecodedIdToken } from "firebase-admin/auth";
+import { FirebaseAuthError } from "firebase-admin/auth";
 
 import { validationMethods, ValidationError } from "@/validation";
-import { authMiddleware } from "@/middleware/auth";
-
+import { authMiddleware, AuthenticatedRequest } from "@/middleware/auth";
 import { DataError } from "@/data/collections";
-import { userDataMethods, UserDocument } from "@/data/users";
+import {
+    OwnerUserDocument,
+    ReviewerUserDocument,
+    LabelerUserDocument,
+    userDataMethods,
+    UserDocument,
+} from "@/data/users";
 
 const authRoutes = Router();
 const firebaseAuth = getAuth(firebaseApp);
-
-interface AuthenticatedRequest extends Request {
-    user: {
-        token: DecodedIdToken;
-    };
-}
 
 authRoutes.post(
     "/register",
@@ -26,7 +25,10 @@ authRoutes.post(
         res: Response,
     ): Promise<Response<any, Record<string, any>>> => {
         try {
-            const user: UserDocument =
+            const user:
+                | OwnerUserDocument
+                | LabelerUserDocument
+                | ReviewerUserDocument =
                 validationMethods.request.auth.register(req);
             await userDataMethods.createUser(user);
             await firebaseAuth.createUser({
@@ -72,4 +74,4 @@ authRoutes.get(
     },
 );
 
-export { authRoutes, AuthenticatedRequest };
+export { authRoutes };

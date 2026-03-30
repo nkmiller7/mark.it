@@ -1,7 +1,13 @@
 import express from "express";
 import validator from "validator";
 
-import { LabelerUserDocument, OwnerUserDocument, ReviewerUserDocument, userDataMethods, UserDocument } from "@/data/users";
+import {
+    LabelerUserDocument,
+    OwnerUserDocument,
+    ReviewerUserDocument,
+    userDataMethods,
+    UserDocument,
+} from "@/data/users";
 
 class ValidationError extends Error {
     code: number;
@@ -132,7 +138,10 @@ const validationMethods = {
         auth: {
             register: (
                 req: express.Request,
-            ): UserDocument => {
+            ):
+                | OwnerUserDocument
+                | LabelerUserDocument
+                | ReviewerUserDocument => {
                 const body = req.body;
                 if (body === undefined || typeof body !== "object")
                     throw new ValidationError(400, "Invalid request body.");
@@ -143,39 +152,51 @@ const validationMethods = {
                     );
 
                 validationMethods.user.password(body.password);
-                
+
                 const user: UserDocument = {
                     email: validationMethods.user.email(body.email),
                     type: validationMethods.user.type(body.type),
-                }
+                };
                 switch (true) {
                     case userDataMethods.isOwnerUser(user): {
                         const ownerUser: OwnerUserDocument = {
                             email: user.email,
                             type: user.type,
-                            entityName: validationMethods.user.entityName(body.entityName),
-                        }
+                            entityName: validationMethods.user.entityName(
+                                body.entityName,
+                            ),
+                        };
                         return ownerUser;
                     }
                     case userDataMethods.isLabelerUser(user): {
                         const labelerUser: LabelerUserDocument = {
                             email: user.email,
                             type: user.type,
-                            firstName: validationMethods.user.firstName(body.firstName),
-                            lastName: validationMethods.user.lastName(body.lastName),
-                        }
+                            firstName: validationMethods.user.firstName(
+                                body.firstName,
+                            ),
+                            lastName: validationMethods.user.lastName(
+                                body.lastName,
+                            ),
+                            rating: 0,
+                        };
                         return labelerUser;
                     }
                     case userDataMethods.isReviewerUser(user): {
                         const reviewerUser: ReviewerUserDocument = {
                             email: user.email,
                             type: user.type,
-                            firstName: validationMethods.user.firstName(user.firstName),
-                            lastName: validationMethods.user.lastName(user.lastName),
-                        }
+                            firstName: validationMethods.user.firstName(
+                                body.firstName,
+                            ),
+                            lastName: validationMethods.user.lastName(
+                                body.lastName,
+                            ),
+                            rating: 0,
+                        };
                         return reviewerUser;
                     }
-                    case (true): {
+                    case true: {
                         throw new ValidationError(400, "Unrecognized type.");
                     }
                 }
