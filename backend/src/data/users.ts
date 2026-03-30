@@ -1,4 +1,4 @@
-import { ObjectId, Collection, WithId } from "mongodb";
+import { ObjectId, Collection, WithId, Document } from "mongodb";
 import { DataError, usersCollection } from "@/data/collections";
 
 import { validationMethods } from "@/validation";
@@ -13,10 +13,12 @@ interface OwnerUserDocument extends UserDocument {
 interface LabelerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
+    rating?: number;
 }
 interface ReviewerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
+    rating?: number;
 }
 
 const userDataMethods = {
@@ -37,6 +39,19 @@ const userDataMethods = {
     },
     isReviewerUser: (user: UserDocument): user is ReviewerUserDocument => {
         return user.type === "reviewer";
+    },
+
+    getUserByEmail: async (arg: unknown): Promise<WithId<UserDocument>> => {
+        const email = validationMethods.user.email(arg);
+        const usersCol = await usersCollection<UserDocument>();
+        const user = await usersCol.findOne({
+            email: {
+                $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+                $options: "i",
+            },
+        });
+        if (user === null) throw new DataError(404, "User not found.");
+        return user;
     },
 
     createUser: async <T extends UserDocument>(user: T): Promise<ObjectId> => {
@@ -67,6 +82,7 @@ const userDataMethods = {
                 labelerUser.lastName = validationMethods.user.lastName(
                     labelerUser.lastName,
                 );
+                labelerUser.rating = 0;
                 const insertInfo = await usersCol.insertOne(labelerUser);
                 if (insertInfo.acknowledged !== true)
                     throw new DataError(500, "Failed to create new user.");
@@ -83,6 +99,7 @@ const userDataMethods = {
                 reviewerUser.lastName = validationMethods.user.lastName(
                     reviewerUser.lastName,
                 );
+                reviewerUser.rating = 0;
                 const insertInfo = await usersCol.insertOne(reviewerUser);
                 if (insertInfo.acknowledged !== true)
                     throw new DataError(500, "Failed to create new user.");

@@ -26,17 +26,22 @@ authRoutes.post(
         res: Response,
     ): Promise<Response<any, Record<string, any>>> => {
         try {
+            //console.log("[req.body:", JSON.stringify(req.body));
             const user: UserDocument =
                 validationMethods.request.auth.register(req);
+            //console.log("validated user:", JSON.stringify(user));
             await userDataMethods.createUser(user);
+            //console.log("mongo user created");
             await firebaseAuth.createUser({
                 email: user.email,
                 password: validationMethods.user.password(req.body.password),
             });
+            //console.log("firebase user created");
             return res
                 .status(201)
                 .json({ message: "Account successfully created." });
         } catch (e: unknown) {
+            //console.error("[register] error:", e);
             switch (true) {
                 case e instanceof ValidationError: {
                     return res
