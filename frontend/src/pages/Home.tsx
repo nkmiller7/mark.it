@@ -23,7 +23,7 @@ export default function Home() {
             try {
                 const token = await currentUser?.getIdToken();
                 const res = await fetch(
-                    `/api/user/${encodeURIComponent(currentUser?.email ?? "")}`,
+                    "/api/user/",
                     {
                         method: "GET",
                         headers: {
