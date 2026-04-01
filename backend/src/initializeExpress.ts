@@ -10,10 +10,10 @@ expressApp.use(cors());
 expressApp.use(express.json());
 expressApp.use(express.urlencoded({ extended: true }));
 
-configRoutes(expressApp);
-
 if (process.env.NODE_ENV === "production") {
     expressApp.use(express.static(path.join(__dirname, "../public")));
 }
+
+configRoutes(expressApp);
 
 export { expressApp };
