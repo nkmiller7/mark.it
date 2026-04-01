@@ -1,5 +1,6 @@
 import express from "express";
 import validator from "validator";
+import { ObjectId } from "mongodb";
 
 import {
     LabelerUserDocument,
@@ -8,6 +9,7 @@ import {
     userDataMethods,
     UserDocument,
 } from "@/data/users";
+import { JobDocument } from "@/data/jobs";
 
 class ValidationError extends Error {
     code: number;
@@ -132,6 +134,79 @@ const validationMethods = {
                 );
             return trimmedArg;
         },
+
+        rating: (arg: unknown): number => {
+            if (typeof arg !== "number")
+                throw new ValidationError(400, "Rating must be a number.");
+            if (arg < 0 || arg > 5)
+                throw new ValidationError(
+                    400,
+                    "Rating must be between 0 and 5.",
+                );
+            return arg;
+        },
+    },
+
+    job: {
+        description: (arg: unknown): string => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "Description must be a string.");
+            const trimmedArg: string = arg.trim();
+            if (!(trimmedArg.length >= 10 && trimmedArg.length <= 200))
+                throw new ValidationError(
+                    400,
+                    "Description must be between 10 and 200 characters long.",
+                );
+            return trimmedArg;
+        },
+        ratingRequired: (
+            arg: unknown,
+        ): { reviewer: number; labeler: number } => {
+            if (typeof arg !== "object" || arg === null)
+                throw new ValidationError(
+                    400,
+                    "Rating required must be an object.",
+                );
+            const argRecord = arg as Record<string, unknown>;
+            if (
+                argRecord.reviewer === undefined ||
+                argRecord.labeler === undefined
+            )
+                throw new ValidationError(
+                    400,
+                    "Rating required must have reviewer and labeler properties.",
+                );
+            const reviewerRating = validationMethods.user.rating(
+                argRecord.reviewer,
+            );
+            const labelerRating = validationMethods.user.rating(
+                argRecord.labeler,
+            );
+            return {
+                reviewer: reviewerRating,
+                labeler: labelerRating,
+            };
+        },
+    },
+
+    common: {
+        id: (arg: unknown): ObjectId => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "ID must be a string.");
+            if (!ObjectId.isValid(arg))
+                throw new ValidationError(400, "ID must be a valid ObjectId.");
+            return new ObjectId(arg);
+        },
+        date: (arg: unknown): string => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "Date must be a string.");
+            if (!validator.isISO8601(arg))
+                throw new ValidationError(
+                    400,
+                    "Date must be a valid ISO 8601 date string.",
+                );
+            return arg;
+        },
     },
 
     request: {
@@ -220,6 +295,37 @@ const validationMethods = {
                     email: email,
                     password: password,
                 };
+            },
+        },
+
+        job: {
+            create: (req: express.Request): JobDocument => {
+                const body = req.body;
+                if (body === undefined || typeof body !== "object")
+                    throw new ValidationError(400, "Invalid request body.");
+                if (
+                    body.ownerId === undefined ||
+                    body.description === undefined ||
+                    body.deadlineDate === undefined ||
+                    body.ratingRequired === undefined
+                )
+                    throw new ValidationError(
+                        400,
+                        "All job fields are required.",
+                    );
+                const job: JobDocument = {
+                    ownerId: validationMethods.common.id(body.ownerId),
+                    description: validationMethods.job.description(
+                        body.description,
+                    ),
+                    deadlineDate: validationMethods.common.date(
+                        body.deadlineDate,
+                    ),
+                    ratingRequired: validationMethods.job.ratingRequired(
+                        body.ratingRequired,
+                    ),
+                };
+                return job;
             },
         },
     },
