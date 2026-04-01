@@ -4,6 +4,6 @@ dotenv.config();
 import { expressApp } from "@/initializeExpress";
 import { firebaseApp } from "@/initializeFirebase";
 
-expressApp.listen(3000, () => {
-    console.log("Server is running on port 3000");
+expressApp.listen(3001, () => {
+    console.log("Server is running on port 3001");
 });

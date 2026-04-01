@@ -7,7 +7,7 @@
         "build": "tsc",
         "dev": "ts-node -r tsconfig-paths/register ./src/app.ts",
         "prod": "npm run build && npm start",
-        "start": "node -r tsconfig-paths/register ./dist/app.js",
+        "start": "node -r ./register.js ./dist/app.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Noah Miller 20014855",
