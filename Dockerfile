@@ -24,5 +24,6 @@ RUN npm install
 COPY backend/ .
 RUN npm run build
 COPY --from=frontend-builder /app/frontend/dist ./public
+ENV NODE_ENV=production
 EXPOSE 3001
 CMD ["npm", "start"]

@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 
 function ScrollToHash() {
     const { pathname, hash } = useLocation();
@@ -37,6 +38,7 @@ function App() {
                     <Route element={<PrivateRoute />}>
                         <Route path="/home" element={<Home />} />
                     </Route>
+                    <Route path="*" element={<NotFound />} />
                 </Routes>
             </AuthProvider>
         </BrowserRouter>
