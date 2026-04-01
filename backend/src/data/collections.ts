@@ -1,9 +1,8 @@
 import { Collection, Db, MongoClient } from "mongodb";
 import { UserDocument } from "@/data/users";
+import { JobDocument } from "@/data/jobs";
 
-const getCollection = <T>(
-    name: string,
-): (() => Promise<Collection<T>>) => {
+const getCollection = <T>(name: string): (() => Promise<Collection<T>>) => {
     let collection: Collection<T> | undefined = undefined;
     return async (): Promise<Collection<T>> => {
         if (collection === undefined) {
@@ -29,5 +28,6 @@ class DataError extends Error {
 
 const usersCollection = <T extends UserDocument>(): Promise<Collection<T>> =>
     getCollection<T>("users")();
+const jobsCollection = getCollection<JobDocument>("jobs");
 
-export { DataError, usersCollection };
+export { DataError, usersCollection, jobsCollection };

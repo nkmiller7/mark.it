@@ -4,9 +4,9 @@
         "moduleResolution": "node",
         "target": "ES6",
         "outDir": "./dist",
-        "baseUrl": "./src",
+        "baseUrl": ".",
         "paths": {
-            "@/*": ["*"]
+            "@/*": ["dist/*"]
         },
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
