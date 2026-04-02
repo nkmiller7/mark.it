@@ -18,7 +18,7 @@ const jobRoutes = Router();
 
 jobRoutes.get(
     "/",
-    authMiddleware.authenticateLabelerOrReviewerRequest,
+    authMiddleware.authenticateRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const user: WithId<
@@ -35,7 +35,10 @@ jobRoutes.get(
                 );
                 return res.status(200).json(jobs);
             } else {
-                return res.status(403).json({ error: "Forbidden request." });
+                const jobs = await jobDataMethods.getJobsByOwnerId(
+                    user._id.toString(),
+                );
+                return res.status(200).json(jobs);
             }
         } catch (e) {
             switch (true) {
