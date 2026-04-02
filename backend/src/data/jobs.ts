@@ -15,7 +15,7 @@ interface JobDocument {
 
 const jobDataMethods = {
     getJobById: async (id: string): Promise<JobDocument> => {
-        let mongoId = validationMethods.common.id(id);
+        const mongoId = validationMethods.common.id(id);
 
         const jobsCol = await jobsCollection();
         const job: JobDocument = await jobsCol.findOne({
@@ -27,7 +27,7 @@ const jobDataMethods = {
     },
 
     getJobsByOwnerId: async (ownerId: string): Promise<JobDocument[]> => {
-        let mongoOwnerId = validationMethods.common.id(ownerId);
+        const mongoOwnerId = validationMethods.common.id(ownerId);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
@@ -40,7 +40,7 @@ const jobDataMethods = {
     },
 
     getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
-        let validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.job.ratingRequired(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
@@ -53,7 +53,7 @@ const jobDataMethods = {
     },
 
     getJobsByReviewerRating: async (rating: number): Promise<JobDocument[]> => {
-        let validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.job.ratingRequired(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol

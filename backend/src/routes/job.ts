@@ -12,6 +12,7 @@ import {
     ReviewerUserDocument,
 } from "@/data/users";
 import { jobDataMethods, JobDocument } from "@/data/jobs";
+import { taskDataMethods } from "@/data/tasks";
 
 const jobRoutes = Router();
 
@@ -81,6 +82,35 @@ jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
         }
     }
 });
+
+jobRoutes.get(
+    "/:id/tasks",
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const jobId: ObjectId = validationMethods.common.id(req.params.id);
+            const tasks = await taskDataMethods.getTaskByJobId(
+                jobId.toString(),
+            );
+            return res.status(200).json(tasks);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
 
 jobRoutes.post(
     "/",

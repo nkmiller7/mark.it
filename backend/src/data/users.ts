@@ -5,7 +5,7 @@ import { validationMethods } from "@/validation";
 
 interface UserDocument {
     email: string;
-    type: string;
+    type: "owner" | "labeler" | "reviewer";
 }
 interface OwnerUserDocument extends UserDocument {
     entityName: string;

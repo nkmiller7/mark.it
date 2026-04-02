@@ -1,4 +1,4 @@
-import express from "express";
+import { Request } from "express";
 import validator from "validator";
 import { ObjectId } from "mongodb";
 
@@ -10,6 +10,7 @@ import {
     UserDocument,
 } from "@/data/users";
 import { JobDocument } from "@/data/jobs";
+import { TaskDocument } from "@/data/tasks";
 
 class ValidationError extends Error {
     code: number;
@@ -32,20 +33,18 @@ const validationMethods = {
             return trimmedArg;
         },
 
-        type: (arg: unknown): string => {
+        type: (arg: unknown): "owner" | "labeler" | "reviewer" => {
             if (typeof arg !== "string")
                 throw new ValidationError(400, "Type must be a string.");
             const trimmedArg = arg.trim().toLowerCase();
-            switch (true) {
-                case trimmedArg === "owner" ||
-                    trimmedArg === "labeler" ||
-                    trimmedArg === "reviewer": {
-                    return trimmedArg;
-                }
-                case true: {
-                    throw new ValidationError(400, "Unrecognized type.");
-                }
+            if (
+                trimmedArg === "owner" ||
+                trimmedArg === "labeler" ||
+                trimmedArg === "reviewer"
+            ) {
+                return trimmedArg;
             }
+            throw new ValidationError(400, "Unrecognized type.");
         },
 
         password: (arg: unknown): string => {
@@ -189,6 +188,52 @@ const validationMethods = {
         },
     },
 
+    task: {
+        description: (arg: unknown): string => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "Description must be a string.");
+            const trimmedArg: string = arg.trim();
+            if (!(trimmedArg.length >= 10 && trimmedArg.length <= 200))
+                throw new ValidationError(
+                    400,
+                    "Description must be between 10 and 200 characters long.",
+                );
+            return trimmedArg;
+        },
+        schema: (arg: unknown): string[] => {
+            if (!Array.isArray(arg))
+                throw new ValidationError(400, "Schema must be an array.");
+            if (arg.length === 0)
+                throw new ValidationError(
+                    400,
+                    "Schema must have at least one field.",
+                );
+            const validatedSchema: string[] = [];
+            for (const label of arg) {
+                if (typeof label !== "string")
+                    throw new ValidationError(400, "Labels must be strings.");
+                const trimmedLabel = label.trim();
+                if (trimmedLabel.length === 0)
+                    throw new ValidationError(400, "Labels cannot be empty.");
+                validatedSchema.push(trimmedLabel);
+            }
+            return validatedSchema;
+        },
+        status: (arg: unknown): "unlabeled" | "labeled" | "reviewed" => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "Status must be a string.");
+            const trimmedArg = arg.trim().toLowerCase();
+            if (
+                trimmedArg === "unlabeled" ||
+                trimmedArg === "labeled" ||
+                trimmedArg === "reviewed"
+            ) {
+                return trimmedArg;
+            }
+            throw new ValidationError(400, "Unrecognized status.");
+        },
+    },
+
     common: {
         id: (arg: unknown): ObjectId => {
             if (typeof arg !== "string")
@@ -212,7 +257,7 @@ const validationMethods = {
     request: {
         auth: {
             register: (
-                req: express.Request,
+                req: Request,
             ):
                 | OwnerUserDocument
                 | LabelerUserDocument
@@ -277,9 +322,7 @@ const validationMethods = {
                 }
             },
 
-            login: (
-                req: express.Request,
-            ): { email: string; password: string } => {
+            login: (req: Request): { email: string; password: string } => {
                 const body = req.body;
                 if (body === undefined || typeof body !== "object")
                     throw new ValidationError(400, "Invalid request body.");
@@ -299,7 +342,7 @@ const validationMethods = {
         },
 
         job: {
-            create: (req: express.Request): JobDocument => {
+            create: (req: Request): JobDocument => {
                 const body = req.body;
                 if (body === undefined || typeof body !== "object")
                     throw new ValidationError(400, "Invalid request body.");
@@ -311,7 +354,7 @@ const validationMethods = {
                 )
                     throw new ValidationError(
                         400,
-                        "All job fields are required.",
+                        "Owner ID, description, deadline date, and rating are required.",
                     );
                 const job: JobDocument = {
                     ownerId: validationMethods.common.id(body.ownerId),
@@ -326,6 +369,34 @@ const validationMethods = {
                     ),
                 };
                 return job;
+            },
+        },
+
+        task: {
+            create: (req: Request): TaskDocument => {
+                const body = req.body;
+                if (body === undefined || typeof body !== "object")
+                    throw new ValidationError(400, "Invalid request body.");
+                if (
+                    body.jobId === undefined ||
+                    body.description === undefined ||
+                    body.schema === undefined
+                )
+                    throw new ValidationError(
+                        400,
+                        "Job ID, description, and schema are required.",
+                    );
+                const task: TaskDocument = {
+                    jobId: validationMethods.common.id(body.jobId),
+                    description: validationMethods.task.description(
+                        body.description,
+                    ),
+                    schema: validationMethods.task.schema(body.schema),
+                    assignedLabelerId: null,
+                    assignedReviewerId: null,
+                    status: "unlabeled",
+                };
+                return task;
             },
         },
     },
