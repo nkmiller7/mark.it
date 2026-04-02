@@ -39,6 +39,32 @@ const jobDataMethods = {
         return jobs;
     },
 
+    getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
+        let validatedRating = validationMethods.job.ratingRequired(rating);
+
+        const jobsCol = await jobsCollection();
+        const jobs: JobDocument[] = await jobsCol
+            .find({
+                "ratingRequired.labeler": { $lte: validatedRating },
+            })
+            .toArray();
+
+        return jobs;
+    },
+
+    getJobsByReviewerRating: async (rating: number): Promise<JobDocument[]> => {
+        let validatedRating = validationMethods.job.ratingRequired(rating);
+
+        const jobsCol = await jobsCollection();
+        const jobs: JobDocument[] = await jobsCol
+            .find({
+                "ratingRequired.reviewer": { $lte: validatedRating },
+            })
+            .toArray();
+
+        return jobs;
+    },
+
     createJob: async (job: JobDocument): Promise<ObjectId> => {
         job.ownerId = validationMethods.common.id(job.ownerId);
         job.description = validationMethods.job.description(job.description);
