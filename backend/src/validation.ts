@@ -2,6 +2,7 @@ import { Request } from "express";
 import validator from "validator";
 import { ObjectId } from "mongodb";
 
+import { DataError } from "@/data/collections";
 import {
     LabelerUserDocument,
     OwnerUserDocument,
@@ -9,7 +10,7 @@ import {
     userDataMethods,
     UserDocument,
 } from "@/data/users";
-import { JobDocument } from "@/data/jobs";
+import { JobDocument, jobDataMethods } from "@/data/jobs";
 import { TaskDocument } from "@/data/tasks";
 
 class ValidationError extends Error {
@@ -396,6 +397,16 @@ const validationMethods = {
                     assignedReviewerId: null,
                     status: "unlabeled",
                 };
+                jobDataMethods.getJobById(task.jobId.toString()).catch((e) => {
+                    if (e instanceof DataError && e.code === 404) {
+                        throw new ValidationError(
+                            400,
+                            "Job ID does not exist.",
+                        );
+                    } else {
+                        throw e;
+                    }
+                });
                 return task;
             },
         },
