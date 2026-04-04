@@ -15,7 +15,7 @@ interface JobDocument {
 
 const jobDataMethods = {
     getJobById: async (id: string): Promise<JobDocument> => {
-        let mongoId = validationMethods.common.id(id);
+        const mongoId = validationMethods.common.id(id);
 
         const jobsCol = await jobsCollection();
         const job: JobDocument = await jobsCol.findOne({
@@ -27,12 +27,38 @@ const jobDataMethods = {
     },
 
     getJobsByOwnerId: async (ownerId: string): Promise<JobDocument[]> => {
-        let mongoOwnerId = validationMethods.common.id(ownerId);
+        const mongoOwnerId = validationMethods.common.id(ownerId);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
             .find({
                 ownerId: mongoOwnerId,
+            })
+            .toArray();
+
+        return jobs;
+    },
+
+    getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
+        const validatedRating = validationMethods.job.ratingRequired(rating);
+
+        const jobsCol = await jobsCollection();
+        const jobs: JobDocument[] = await jobsCol
+            .find({
+                "ratingRequired.labeler": { $lte: validatedRating },
+            })
+            .toArray();
+
+        return jobs;
+    },
+
+    getJobsByReviewerRating: async (rating: number): Promise<JobDocument[]> => {
+        const validatedRating = validationMethods.job.ratingRequired(rating);
+
+        const jobsCol = await jobsCollection();
+        const jobs: JobDocument[] = await jobsCol
+            .find({
+                "ratingRequired.reviewer": { $lte: validatedRating },
             })
             .toArray();
 
