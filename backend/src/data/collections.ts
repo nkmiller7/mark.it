@@ -1,6 +1,7 @@
 import { Collection, Db, MongoClient } from "mongodb";
 import { UserDocument } from "@/data/users";
 import { JobDocument } from "@/data/jobs";
+import { TaskDocument } from "@/data/tasks";
 
 const getCollection = <T>(name: string): (() => Promise<Collection<T>>) => {
     let collection: Collection<T> | undefined = undefined;
@@ -29,5 +30,6 @@ class DataError extends Error {
 const usersCollection = <T extends UserDocument>(): Promise<Collection<T>> =>
     getCollection<T>("users")();
 const jobsCollection = getCollection<JobDocument>("jobs");
+const tasksCollection = getCollection<TaskDocument>("tasks");
 
-export { DataError, usersCollection, jobsCollection };
+export { DataError, usersCollection, jobsCollection, tasksCollection };

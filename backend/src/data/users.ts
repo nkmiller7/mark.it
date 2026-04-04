@@ -5,7 +5,7 @@ import { validationMethods } from "@/validation";
 
 interface UserDocument {
     email: string;
-    type: string;
+    type: "owner" | "labeler" | "reviewer";
 }
 interface OwnerUserDocument extends UserDocument {
     entityName: string;
@@ -100,9 +100,7 @@ const userDataMethods = {
     getUserByEmail: async (
         email: string,
     ): Promise<
-        | WithId<OwnerUserDocument>
-        | WithId<LabelerUserDocument>
-        | WithId<ReviewerUserDocument>
+        WithId<OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument>
     > => {
         email = validationMethods.user.email(email);
         const usersCol = await usersCollection<
