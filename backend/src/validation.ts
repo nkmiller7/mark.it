@@ -209,6 +209,12 @@ const validationMethods = {
                     400,
                     "Schema must have at least one field.",
                 );
+            if(arg.length > 7){
+                throw new ValidationError(
+                    400,
+                    "Schema must have no more than 7 fields."
+                )
+            }
             const validatedSchema: string[] = [];
             for (const label of arg) {
                 if (typeof label !== "string")
@@ -234,7 +240,35 @@ const validationMethods = {
             throw new ValidationError(400, "Unrecognized status.");
         },
     },
-
+    asset: {
+        source: (arg: unknown): "s3" | "local" => {
+            if(typeof arg !== "string")
+                throw new ValidationError(400, "Source must be a string.");
+            const trimmedArg = arg.trim().toLowerCase();
+            if (
+                trimmedArg === "s3" ||
+                trimmedArg === "local"
+            ){
+                return trimmedArg;
+            }
+            throw new ValidationError(400, "Unrecognized source");
+        },
+        key: (arg: unknown): string => {
+            if(typeof arg !== "string")
+                throw new ValidationError(400, "Key must be a string.");
+            const trimmedArg = arg.trim().toLowerCase();
+            return trimmedArg;
+        },
+        label: (arg: unknown, schema: string[]): string => {
+            if (typeof arg !== "string")
+                throw new ValidationError(400, "Label must be a string.");
+            const trimmedArg = arg.trim();
+            if(!(schema.includes(trimmedArg))){
+                throw new ValidationError(400, "Label must be part of the schema.");
+            }
+            return trimmedArg;
+        }
+    },
     common: {
         id: (arg: unknown): ObjectId => {
             if (typeof arg !== "string")

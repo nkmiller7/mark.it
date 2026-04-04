@@ -2,6 +2,7 @@ import { Collection, Db, MongoClient } from "mongodb";
 import { UserDocument } from "@/data/users";
 import { JobDocument } from "@/data/jobs";
 import { TaskDocument } from "@/data/tasks";
+import { AssetDocument } from "@/data/assets";
 
 const getCollection = <T>(name: string): (() => Promise<Collection<T>>) => {
     let collection: Collection<T> | undefined = undefined;
@@ -31,5 +32,6 @@ const usersCollection = <T extends UserDocument>(): Promise<Collection<T>> =>
     getCollection<T>("users")();
 const jobsCollection = getCollection<JobDocument>("jobs");
 const tasksCollection = getCollection<TaskDocument>("tasks");
+const assetsCollection = getCollection<AssetDocument>("assets");
 
-export { DataError, usersCollection, jobsCollection, tasksCollection };
+export { DataError, usersCollection, jobsCollection, tasksCollection, assetsCollection };

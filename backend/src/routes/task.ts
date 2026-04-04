@@ -41,6 +41,35 @@ taskRoutes.get(
             }
         }
     },
+
+);
+
+taskRoutes.get(
+    "/:id/assets",
+    authMiddleware.authenticateRequest,
+    async( req: AuthenticatedRequest, res: Response) => {
+        try {
+            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const task = await taskDataMethods.getTaskById(taskId.toString());
+            return res.status(200).json(task);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
 );
 
 taskRoutes.post(
