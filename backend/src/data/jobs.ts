@@ -80,6 +80,35 @@ const jobDataMethods = {
 
         return insertInfo.insertedId;
     },
+
+    getJobsWithTaskCountsByOwnerId: async (
+        ownerId: string,
+    ): Promise<(JobDocument & { taskCount: number })[]> => {
+        const mongoOwnerId = validationMethods.common.id(ownerId);
+
+        const jobsCol = await jobsCollection();
+        const jobs = await jobsCol
+            .aggregate<JobDocument & { taskCount: number }>([
+                { $match: { ownerId: mongoOwnerId } },
+                {
+                    $lookup: {
+                        from: "tasks",
+                        localField: "_id",
+                        foreignField: "jobId",
+                        as: "_tasks",
+                    },
+                },
+                {
+                    $addFields: {
+                        taskCount: { $size: "$_tasks" },
+                    },
+                },
+                { $project: { _tasks: 0 } },
+            ])
+            .toArray();
+
+        return jobs;
+    },
 };
 
 export { JobDocument, jobDataMethods };

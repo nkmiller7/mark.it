@@ -4,7 +4,7 @@ import path from "path";
 import { authRoutes } from "@/routes/auth";
 import { userRoutes } from "@/routes/user";
 import { jobRoutes } from "@/routes/job";
-import { taskRoutes} from "@/routes/task";
+import { taskRoutes } from "@/routes/task";
 
 const configRoutes = (app: Express): void => {
     app.get("/api/health", (_req: Request, res: Response) => {

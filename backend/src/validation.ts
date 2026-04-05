@@ -237,6 +237,7 @@ const validationMethods = {
 
     common: {
         id: (arg: unknown): ObjectId => {
+            if (arg instanceof ObjectId) return arg;
             if (typeof arg !== "string")
                 throw new ValidationError(400, "ID must be a string.");
             if (!ObjectId.isValid(arg))
@@ -370,6 +371,85 @@ const validationMethods = {
                     ),
                 };
                 return job;
+            },
+
+            createWithTasks: (
+                req: Request,
+            ): {
+                job: JobDocument;
+                tasks: { description: string; schema: string[] }[];
+            } => {
+                const body = req.body;
+                if (body === undefined || typeof body !== "object")
+                    throw new ValidationError(400, "Invalid request body.");
+                if (
+                    body.description === undefined ||
+                    body.deadlineDate === undefined ||
+                    body.ratingRequired === undefined ||
+                    body.tasks === undefined
+                )
+                    throw new ValidationError(
+                        400,
+                        "Description, deadline date, rating, and tasks are required.",
+                    );
+
+                const job: JobDocument = {
+                    ownerId: null as unknown as ObjectId,
+                    description: validationMethods.job.description(
+                        body.description,
+                    ),
+                    deadlineDate: validationMethods.common.date(
+                        body.deadlineDate,
+                    ),
+                    ratingRequired: validationMethods.job.ratingRequired(
+                        body.ratingRequired,
+                    ),
+                };
+
+                if (!Array.isArray(body.tasks))
+                    throw new ValidationError(400, "Tasks must be an array.");
+                if (body.tasks.length === 0)
+                    throw new ValidationError(
+                        400,
+                        "At least one task is required.",
+                    );
+
+                const tasks: { description: string; schema: string[] }[] =
+                    body.tasks.map(
+                        (
+                            t: unknown,
+                            i: number,
+                        ): { description: string; schema: string[] } => {
+                            if (
+                                t === null ||
+                                t === undefined ||
+                                typeof t !== "object"
+                            )
+                                throw new ValidationError(
+                                    400,
+                                    `Task ${i + 1} is invalid.`,
+                                );
+                            const task = t as Record<string, unknown>;
+                            if (
+                                task.description === undefined ||
+                                task.schema === undefined
+                            )
+                                throw new ValidationError(
+                                    400,
+                                    `Task ${i + 1}: description and schema are required.`,
+                                );
+                            return {
+                                description: validationMethods.task.description(
+                                    task.description,
+                                ),
+                                schema: validationMethods.task.schema(
+                                    task.schema,
+                                ),
+                            };
+                        },
+                    );
+
+                return { job, tasks };
             },
         },
 
