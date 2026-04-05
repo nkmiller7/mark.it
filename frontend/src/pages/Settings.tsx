@@ -111,7 +111,7 @@ export default function Settings() {
                 </div>
                 <Link
                     to="/settings/change-password"
-                    className="block rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                    className="block rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
                 >
                     Change Password
                 </Link>
