@@ -13,6 +13,9 @@ import {
 } from "@/data/users";
 import { jobDataMethods, JobDocument } from "@/data/jobs";
 import { taskDataMethods } from "@/data/tasks";
+import { ownerDataMethods } from '@/data/owner';
+import mime from 'mime';
+import path from 'path';
 
 const jobRoutes = Router();
 
@@ -144,5 +147,45 @@ jobRoutes.post(
         }
     },
 );
+
+jobRoutes.post(
+    "/:id/upload",
+    authMiddleware.authenticateOwnerRequest,
+    async(req: AuthenticatedRequest, res:Response) => {
+        try {
+            const filePaths = req.body.filePaths;
+            let files = [];
+            for(let file of filePaths){
+                let mimetype = mime.lookup(file);
+                if(mimetype !== "image/jpeg" && mimetype !== "image/png"){
+                    throw new DataError(400, "Image must be of type jpeg or png");
+                }
+                files.push({
+                    path: file,
+                    mimetype: mimetype,
+                    filename: path.parse(file)
+                })
+            }
+            const result = await ownerDataMethods.uploadImages(files);
+            return res.status(200).json(result);
+        }catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    }
+)
 
 export { jobRoutes };

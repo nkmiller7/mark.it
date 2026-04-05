@@ -123,3 +123,4 @@ assetRoutes.patch("/:id/review",
     }
 );
 
+export { assetRoutes };
