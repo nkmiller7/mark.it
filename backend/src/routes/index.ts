@@ -4,7 +4,8 @@ import path from "path";
 import { authRoutes } from "@/routes/auth";
 import { userRoutes } from "@/routes/user";
 import { jobRoutes } from "@/routes/job";
-import { taskRoutes } from "@/routes/task";
+import { taskRoutes} from "@/routes/task";
+import { assetRoutes } from "@/routes/assets";
 
 const configRoutes = (app: Express): void => {
     app.get("/api/health", (_req: Request, res: Response) => {
@@ -15,6 +16,7 @@ const configRoutes = (app: Express): void => {
     app.use("/api/user", userRoutes);
     app.use("/api/job", jobRoutes);
     app.use("/api/task", taskRoutes);
+    app.use("/api/asset", assetRoutes);
 
     app.use("/api/{*splat}", (_req: Request, res: Response) => {
         res.status(404).json({ error: "Endpoint not found." });

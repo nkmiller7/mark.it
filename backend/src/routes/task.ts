@@ -6,6 +6,7 @@ import { validationMethods, ValidationError } from "@/validation";
 import { authMiddleware, AuthenticatedRequest } from "@/middleware/auth";
 import { DataError } from "@/data/collections";
 import { taskDataMethods, TaskDocument } from "@/data/tasks";
+import { assetDataMethods, AssetDocument } from "@/data/assets";
 import {
     userDataMethods,
     OwnerUserDocument,
@@ -23,6 +24,35 @@ taskRoutes.get(
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
             const task = await taskDataMethods.getTaskById(taskId.toString());
             return res.status(200).json(task);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+
+);
+
+taskRoutes.get(
+    "/:id/assets",
+    authMiddleware.authenticateRequest,
+    async( req: AuthenticatedRequest, res: Response) => {
+        try {
+            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const assets = await assetDataMethods.getAssetsByTask(taskId.toString());
+            return res.status(200).json(assets);
         } catch (e) {
             switch (true) {
                 case e instanceof ValidationError: {
@@ -73,11 +103,42 @@ taskRoutes.post(
         }
     },
 );
+taskRoutes.post(
+    "/:id/assets",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try{
+            const taskId = validationMethods.common.id(req.params.id);
+            const source = validationMethods.asset.source(req.body.source);
+            const key = validationMethods.asset.key(req.body.key);
+            await assetDataMethods.createAsset(taskId, key, source);
+            return res
+                .status(201)
+                .json({ message: "Asset successfully uploaded to task." });
+        }catch(e: unknown){
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    }
 
+)
 taskRoutes.patch(
     "/:id/claim",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: AuthenticatedRequest, res: Response) => { 
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
             const user: WithId<
