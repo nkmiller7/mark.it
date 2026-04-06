@@ -1,4 +1,8 @@
 import { Router, Response } from "express";
+import multer from "multer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { randomUUID } from "crypto";
+import path from "path";
 
 import { ObjectId, WithId } from "mongodb";
 
@@ -13,6 +17,26 @@ import {
     ReviewerUserDocument,
     LabelerUserDocument,
 } from "@/data/users";
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, 
+    fileFilter: (_req, file, cb) => {
+        if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+            cb(null, true);
+        } else {
+            cb(new Error("Only JPEG and PNG images are allowed."));
+        }
+    },
+});
+
+const s3 = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    },
+});
 
 const taskRoutes = Router();
 
@@ -42,16 +66,17 @@ taskRoutes.get(
             }
         }
     },
-
 );
 
 taskRoutes.get(
     "/:id/assets",
     authMiddleware.authenticateRequest,
-    async( req: AuthenticatedRequest, res: Response) => {
+    async (req: AuthenticatedRequest, res: Response) => {
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
-            const assets = await assetDataMethods.getAssetsByTask(taskId.toString());
+            const assets = await assetDataMethods.getAssetsByTask(
+                taskId.toString(),
+            );
             return res.status(200).json(assets);
         } catch (e) {
             switch (true) {
@@ -106,16 +131,39 @@ taskRoutes.post(
 taskRoutes.post(
     "/:id/assets",
     authMiddleware.authenticateOwnerRequest,
+    upload.single("file"),
     async (req: AuthenticatedRequest, res: Response) => {
-        try{
+        try {
             const taskId = validationMethods.common.id(req.params.id);
-            const source = validationMethods.asset.source(req.body.source);
-            const key = validationMethods.asset.key(req.body.key);
-            await assetDataMethods.createAsset(taskId, key, source);
+
+            if (!req.file) {
+                return res
+                    .status(400)
+                    .json({ error: "No image file provided." });
+            }
+
+            // Build a unique S3 key: tasks/<taskId>/<uuid><ext>
+            const ext = path.extname(req.file.originalname) || ".jpg";
+            const s3Key = `tasks/${taskId.toString()}/${randomUUID()}${ext}`;
+
+            await s3.send(
+                new PutObjectCommand({
+                    Bucket: process.env.S3_BUCKET_NAME,
+                    Key: s3Key,
+                    Body: req.file.buffer,
+                    ContentType: req.file.mimetype,
+                }),
+            );
+
+            await assetDataMethods.createAsset(taskId, s3Key, "s3");
+
             return res
                 .status(201)
-                .json({ message: "Asset successfully uploaded to task." });
-        }catch(e: unknown){
+                .json({
+                    message: "Asset successfully uploaded to task.",
+                    key: s3Key,
+                });
+        } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
                     return res
@@ -127,18 +175,19 @@ taskRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
-                    return res.status(500).json({ error: e });
+                default: {
+                    return res
+                        .status(500)
+                        .json({ error: "Internal server error." });
                 }
             }
         }
-    }
-
-)
+    },
+);
 taskRoutes.patch(
     "/:id/claim",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => { 
+    async (req: AuthenticatedRequest, res: Response) => {
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
             const user: WithId<
