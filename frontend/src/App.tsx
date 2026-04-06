@@ -13,6 +13,7 @@ import JobDetail from "./pages/JobDetail";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function ScrollToHash() {
     const { pathname, hash } = useLocation();
@@ -38,6 +39,7 @@ function App() {
                     <Route element={<PublicRoute />}>
                         <Route path="/signin" element={<SignIn />} />
                         <Route path="/signup" element={<SignUp />} />
+                        <Route path="/signin/forgot-password" element={<ForgotPassword />} />
                     </Route>
                     <Route element={<PrivateRoute />}>
                         <Route path="/home" element={<Home />} />

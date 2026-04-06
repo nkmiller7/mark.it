@@ -72,6 +72,12 @@ export default function SignIn() {
                             onChange={(e) => setPassword(e.target.value)}
                             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
+                        <Link
+                            to="/signin/forgot-password"
+                            className="mt-1 block text-right text-xs text-blue-600 hover:text-blue-500"
+                        >
+                            Forgot password?
+                        </Link>
                     </div>
 
                     <button
