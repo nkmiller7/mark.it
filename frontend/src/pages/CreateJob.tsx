@@ -30,7 +30,7 @@ function emptyTask(): TaskForm {
 }
 
 export default function CreateJob() {
-    const { currentUser, userData } = useAuth();
+    const { currentUser } = useAuth();
     const navigate = useNavigate();
 
     const [description, setDescription] = useState("");
