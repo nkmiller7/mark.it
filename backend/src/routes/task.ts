@@ -50,10 +50,10 @@ taskRoutes.post(
         try {
             const task: TaskDocument =
                 validationMethods.request.task.create(req);
-            await taskDataMethods.createTask(task);
-            return res
-                .status(201)
-                .json({ message: "Task successfully created." });
+            const taskId: string = (
+                await taskDataMethods.createTask(task)
+            ).toString();
+            return res.status(201).json({ taskId: taskId });
         } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {

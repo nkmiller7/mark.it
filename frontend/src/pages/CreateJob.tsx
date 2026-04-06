@@ -138,7 +138,8 @@ export default function CreateJob() {
         setSubmitting(true);
         try {
             const token = await currentUser?.getIdToken();
-            const res = await fetch("/api/job", {
+            
+            let res = await fetch("/api/job", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -151,17 +152,38 @@ export default function CreateJob() {
                         labeler: labelerRating,
                         reviewer: reviewerRating,
                     },
-                    tasks: tasks.map((t) => ({
-                        description: t.description.trim(),
-                        schema: t.schema,
-                    })),
                 }),
             });
-
             if (!res.ok) {
                 const data = await res.json();
                 setErrors({ general: data.error || "Failed to create job." });
                 return;
+            }
+            const responseBody = await res.json();
+            if (!responseBody.jobId) {
+                setErrors({ general: "Failed to create job. No job ID returned." });
+                return;
+            }
+
+
+            for (const t of tasks) {
+                res = await fetch(`/api/task`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        jobId: responseBody.jobId,
+                        description: t.description.trim(),
+                        schema: t.schema,
+                    }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    setErrors({ general: data.error || "Failed to create tasks." });
+                    return;
+                }
             }
 
             // TODO: Upload images per task using the returned taskIds
