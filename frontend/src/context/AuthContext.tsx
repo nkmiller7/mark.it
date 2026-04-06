@@ -14,8 +14,20 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 
+interface UserData {
+    _id: string;
+    email: string;
+    type: "owner" | "labeler" | "reviewer";
+    entityName?: string;
+    firstName?: string;
+    lastName?: string;
+    rating?: number;
+}
+
 interface AuthContextType {
     currentUser: User | null;
+    userData: UserData | null;
+    userLoading: boolean;
     loading: boolean;
     signUp: (
         email: string,
@@ -30,15 +42,46 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userLoading, setUserLoading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
             setLoading(false);
+            if (!user) {
+                setUserData(null);
+            }
         });
         return unsubscribe;
     }, []);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!currentUser) return;
+            setUserLoading(true);
+            try {
+                const token = await currentUser.getIdToken();
+                const res = await fetch("/api/user/", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        authorization: `Bearer ${token}`,
+                    },
+                });
+                if (res.ok) {
+                    const data: UserData = await res.json();
+                    setUserData(data);
+                }
+            } catch {
+                // didnt fetch user data (shouldnt hit i think...)
+            } finally {
+                setUserLoading(false);
+            }
+        };
+        fetchUserData();
+    }, [currentUser]);
 
     async function signUp(
         email: string,
@@ -89,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const value: AuthContextType = {
         currentUser,
+        userData,
+        userLoading,
         loading,
         signUp,
         signIn,
@@ -99,6 +144,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
     );
 }
+
+export type { UserData };
 
 export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);

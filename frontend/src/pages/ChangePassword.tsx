@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import {
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword,
+} from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 
 function validatePassword(pw: string): string | null {
@@ -46,7 +50,10 @@ export default function ChangePassword() {
         }
         try {
             setLoading(true);
-            const credential = EmailAuthProvider.credential(currentUser!.email!, currentPassword);
+            const credential = EmailAuthProvider.credential(
+                currentUser!.email!,
+                currentPassword,
+            );
             await reauthenticateWithCredential(currentUser!, credential);
             await updatePassword(currentUser!, newPassword);
             setSuccess(true);
@@ -81,36 +88,40 @@ export default function ChangePassword() {
                         {error}
                     </p>
                 )}
-                {!success && <form onSubmit={handleSubmit} className="space-y-3">
-                    <input
-                        type="password"
-                        placeholder="Current Password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
-                    />
-                    <input
-                        type="password"
-                        placeholder="New Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
-                    />
-                    <input
-                        type="password"
-                        placeholder="Confirm New Password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
-                    />
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="block w-full rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition"
-                    >
-                        {loading ? "Updating Password..." : "Update Password"}
-                    </button>
-                </form>}
+                {!success && (
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <input
+                            type="password"
+                            placeholder="Current Password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
+                        />
+                        <input
+                            type="password"
+                            placeholder="New Password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
+                        />
+                        <input
+                            type="password"
+                            placeholder="Confirm New Password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:outline-none"
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="block w-full rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition"
+                        >
+                            {loading
+                                ? "Updating Password..."
+                                : "Update Password"}
+                        </button>
+                    </form>
+                )}
             </div>
         </div>
     );

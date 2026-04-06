@@ -12,7 +12,7 @@ import {
     ReviewerUserDocument,
 } from "@/data/users";
 import { jobDataMethods, JobDocument } from "@/data/jobs";
-import { taskDataMethods } from "@/data/tasks";
+import { taskDataMethods, TaskDocument } from "@/data/tasks";
 import { ownerDataMethods } from '@/data/owner';
 import mime from 'mime';
 import path from 'path';
@@ -38,9 +38,10 @@ jobRoutes.get(
                 );
                 return res.status(200).json(jobs);
             } else {
-                const jobs = await jobDataMethods.getJobsByOwnerId(
-                    user._id.toString(),
-                );
+                const jobs =
+                    await jobDataMethods.getJobsWithTaskCountsByOwnerId(
+                        user._id.toString(),
+                    );
                 return res.status(200).json(jobs);
             }
         } catch (e) {
@@ -90,6 +91,46 @@ jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
 });
 
 jobRoutes.get(
+    "/:id/details",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const jobId: ObjectId = validationMethods.common.id(req.params.id);
+
+            const job: JobDocument = await jobDataMethods.getJobById(
+                jobId.toString(),
+            );
+            const user = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            if (job.ownerId.toString() !== user._id.toString())
+                throw new ValidationError(403, "You do not own this job.");
+
+            const details = await jobDataMethods.getJobWithDetails(
+                jobId.toString(),
+            );
+            return res.status(200).json(details);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+jobRoutes.get(
     "/:id/tasks",
     async (req: AuthenticatedRequest, res: Response) => {
         try {
@@ -123,11 +164,73 @@ jobRoutes.post(
     authMiddleware.authenticateOwnerRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
-            const job: JobDocument = validationMethods.request.job.create(req);
-            await jobDataMethods.createJob(job);
-            return res
-                .status(201)
-                .json({ message: "Job successfully created." });
+            const { job, tasks } =
+                validationMethods.request.job.createWithTasks(req);
+
+            const owner = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            job.ownerId = owner._id;
+
+            const jobId = await jobDataMethods.createJob(job);
+
+            const taskIds: ObjectId[] = [];
+            for (const t of tasks) {
+                const taskDoc: TaskDocument = {
+                    jobId: jobId,
+                    description: t.description,
+                    schema: t.schema,
+                    assignedLabelerId: null,
+                    assignedReviewerId: null,
+                    status: "unlabeled",
+                };
+                const taskId = await taskDataMethods.createTask(taskDoc);
+                taskIds.push(taskId);
+            }
+
+            return res.status(201).json({ jobId, taskIds });
+        } catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+jobRoutes.post(
+    "/:jobId/tasks",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const jobId: ObjectId = validationMethods.common.id(
+                req.params.jobId,
+            );
+            const job = await jobDataMethods.getJobById(jobId.toString());
+
+            const user = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            if (job.ownerId.toString() !== user._id.toString())
+                throw new ValidationError(403, "You do not own this job.");
+
+            const task: TaskDocument =
+                validationMethods.request.task.create(req);
+            task.jobId = jobId;
+            const taskId = await taskDataMethods.createTask(task);
+
+            return res.status(201).json({ taskId });
         } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
