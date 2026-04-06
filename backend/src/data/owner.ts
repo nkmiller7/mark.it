@@ -1,26 +1,41 @@
 import { validationMethods } from "@/validation";
-import { assetsCollection, tasksCollection, usersCollection, DataError } from "@/data/collections";
+import {
+    assetsCollection,
+    tasksCollection,
+    usersCollection,
+    DataError,
+} from "@/data/collections";
 import { ObjectId } from "mongodb";
 import { TaskDocument } from "./tasks";
 import { assetDataMethods } from "./assets";
-import fs from 'fs';
-import S3 from 'aws-sdk/clients/s3';
-import * as dotenv from 'dotenv';
+import fs from "fs";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import * as dotenv from "dotenv";
 dotenv.config();
 const mode = process.env.MODE;
 
 const ownerDataMethods = {
-    uploadImages: async (files: any[]): Promise<{ key: string; source: "s3" | "local"; }[]> => {
-        let results= [];
-        if(mode === "prod"){
-            const s3 = new S3({
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    uploadImages: async (
+        files: any[],
+    ): Promise<{ key: string; source: "s3" | "local" }[]> => {
+        let results = [];
+        if (mode === "prod") {
+            const s3 = new S3Client({
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+                },
                 region: process.env.AWS_REGION,
             });
-            for(let file of files){
-                if(file.mimetype !== "image/jpeg" && file.mimetype !== "image/png"){
-                    throw new DataError(400, "Image must be of type jpeg or png");
+            for (let file of files) {
+                if (
+                    file.mimetype !== "image/jpeg" &&
+                    file.mimetype !== "image/png"
+                ) {
+                    throw new DataError(
+                        400,
+                        "Image must be of type jpeg or png",
+                    );
                 }
                 const fileStream = fs.createReadStream(file.path);
                 const uploadParams = {
@@ -28,28 +43,36 @@ const ownerDataMethods = {
                     Key: file.filename,
                     Body: fileStream,
                     ContentType: file.mimetype,
-                    ACL: 'public-read',
+                    ACL: "public-read" as const,
                 };
-                await s3.upload(uploadParams).promise();
-                results.push({key: uploadParams.Key, source: "s3"});
+                await s3.send(new PutObjectCommand(uploadParams));
+                results.push({ key: uploadParams.Key, source: "s3" });
             }
             return results;
-        }else{
-            for(let file of files){
-                if(file.mimetype !== "image/jpeg" && file.mimetype !== "image/png"){
-                    throw new DataError(400, "Image must be of type jpeg or png");
+        } else {
+            for (let file of files) {
+                if (
+                    file.mimetype !== "image/jpeg" &&
+                    file.mimetype !== "image/png"
+                ) {
+                    throw new DataError(
+                        400,
+                        "Image must be of type jpeg or png",
+                    );
                 }
-                results.push({key: file.path, source: "local"});
+                results.push({ key: file.path, source: "local" });
             }
         }
-        return results;   
+        return results;
     },
-    createAssetsForTask: async (taskId: ObjectId, assetList: { key: string; source: "s3" | "local"}[]) => {
-        for(let asset of assetList){
+    createAssetsForTask: async (
+        taskId: ObjectId,
+        assetList: { key: string; source: "s3" | "local" }[],
+    ) => {
+        for (let asset of assetList) {
             await assetDataMethods.createAsset(taskId, asset.key, asset.source);
         }
-    }
+    },
 };
 
-
-export {ownerDataMethods};
+export { ownerDataMethods };

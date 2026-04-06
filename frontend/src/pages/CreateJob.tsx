@@ -138,7 +138,7 @@ export default function CreateJob() {
         setSubmitting(true);
         try {
             const token = await currentUser?.getIdToken();
-            
+
             let res = await fetch("/api/job", {
                 method: "POST",
                 headers: {
@@ -161,10 +161,11 @@ export default function CreateJob() {
             }
             const responseBody = await res.json();
             if (!responseBody.jobId) {
-                setErrors({ general: "Failed to create job. No job ID returned." });
+                setErrors({
+                    general: "Failed to create job. No job ID returned.",
+                });
                 return;
             }
-
 
             for (const t of tasks) {
                 res = await fetch(`/api/task`, {
@@ -181,14 +182,42 @@ export default function CreateJob() {
                 });
                 if (!res.ok) {
                     const data = await res.json();
-                    setErrors({ general: data.error || "Failed to create tasks." });
+                    setErrors({
+                        general: data.error || "Failed to create tasks.",
+                    });
                     return;
                 }
-            }
+                const taskBody = await res.json();
+                if (!taskBody.taskId) {
+                    setErrors({
+                        general: "Failed to create task. No task ID returned.",
+                    });
+                    return;
+                }
 
-            // TODO: Upload images per task using the returned taskIds
-            // const { jobId, taskIds } = await res.json();
-            // For each task with files, upload to asset endpoint
+                for (const file of t.files) {
+                    const formData = new FormData();
+                    formData.append("file", file);
+
+                    const assetRes = await fetch(
+                        `/api/task/${taskBody.taskId}/assets`,
+                        {
+                            method: "POST",
+                            headers: {
+                                authorization: `Bearer ${token}`,
+                            },
+                            body: formData,
+                        },
+                    );
+                    if (!assetRes.ok) {
+                        const data = await assetRes.json();
+                        setErrors({
+                            general: data.error || "Failed to upload asset.",
+                        });
+                        return;
+                    }
+                }
+            }
 
             navigate("/home");
         } catch {
