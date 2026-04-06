@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Card from "../components/Card";
 
-interface JobWithTaskCount {
+interface JobSummary {
     _id: string;
     description: string;
     deadlineDate: string;
@@ -11,6 +12,7 @@ interface JobWithTaskCount {
         labeler: number;
     };
     taskCount: number;
+    reviewedCount: number;
 }
 
 interface OwnerHomeProps {
@@ -20,7 +22,8 @@ interface OwnerHomeProps {
 
 export default function OwnerHome({ entityName }: OwnerHomeProps) {
     const { currentUser } = useAuth();
-    const [jobs, setJobs] = useState<JobWithTaskCount[]>([]);
+    const navigate = useNavigate();
+    const [jobs, setJobs] = useState<JobSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +38,7 @@ export default function OwnerHome({ entityName }: OwnerHomeProps) {
                     setError("Failed to load jobs.");
                     return;
                 }
-                const data: JobWithTaskCount[] = await res.json();
+                const data: JobSummary[] = await res.json();
                 setJobs(data);
             } catch {
                 setError("Failed to load jobs.");
@@ -70,7 +73,7 @@ export default function OwnerHome({ entityName }: OwnerHomeProps) {
                         Dashboard
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        Welcome Back, {entityName}!
+                        Welcome back, {entityName}
                     </p>
                 </div>
                 <Link
@@ -113,54 +116,72 @@ export default function OwnerHome({ entityName }: OwnerHomeProps) {
                     </Link>
                 </div>
             ) : (
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Card className="mt-8 overflow-hidden">
+                    {/* Table header */}
+                    <div className="grid grid-cols-[1fr_120px_200px_40px] gap-4 border-b border-gray-200 bg-gray-50 px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-500">
+                        <span>Description</span>
+                        <span>Deadline</span>
+                        <span>Progress</span>
+                        <span />
+                    </div>
+
+                    {/* Job rows */}
                     {jobs.map((job) => {
                         const deadline = new Date(job.deadlineDate);
                         const isPast = deadline < new Date();
+                        const pct =
+                            job.taskCount > 0
+                                ? Math.round(
+                                      (job.reviewedCount / job.taskCount) * 100,
+                                  )
+                                : 0;
+
                         return (
                             <div
                                 key={job._id}
-                                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition"
+                                onClick={() => navigate(`/jobs/${job._id}`)}
+                                className="grid cursor-pointer grid-cols-[1fr_120px_200px_40px] items-center gap-4 border-b border-gray-100 px-6 py-4 hover:bg-gray-50 transition last:border-b-0"
                             >
-                                <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                                <p className="truncate text-sm font-medium text-gray-900">
                                     {job.description}
                                 </p>
-                                <div className="mt-4 space-y-2 text-xs text-gray-500">
-                                    <div className="flex justify-between">
-                                        <span>Deadline</span>
-                                        <span
-                                            className={
-                                                isPast
-                                                    ? "text-red-600 font-medium"
-                                                    : "text-gray-700"
-                                            }
-                                        >
-                                            {deadline.toLocaleDateString()}
-                                        </span>
+
+                                <span
+                                    className={`text-sm ${isPast ? "font-medium text-red-600" : "text-gray-600"}`}
+                                >
+                                    {deadline.toLocaleDateString()}
+                                </span>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${pct === 100 ? "bg-green-500" : "bg-blue-500"}`}
+                                            style={{ width: `${pct}%` }}
+                                        />
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Tasks</span>
-                                        <span className="text-gray-700">
-                                            {job.taskCount}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Min. Labeler Rating</span>
-                                        <span className="text-gray-700">
-                                            {job.ratingRequired.labeler}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Min. Reviewer Rating</span>
-                                        <span className="text-gray-700">
-                                            {job.ratingRequired.reviewer}
-                                        </span>
-                                    </div>
+                                    <span className="w-12 text-right text-xs text-gray-500">
+                                        {job.reviewedCount}/{job.taskCount}
+                                    </span>
                                 </div>
+
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={2}
+                                    stroke="currentColor"
+                                    className="size-4 text-gray-400"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                                    />
+                                </svg>
                             </div>
                         );
                     })}
-                </div>
+                </Card>
             )}
         </div>
     );
