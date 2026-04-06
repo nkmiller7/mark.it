@@ -9,6 +9,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Home from "./pages/Home";
 import CreateJob from "./pages/CreateJob";
+import JobDetail from "./pages/JobDetail";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
@@ -41,6 +42,7 @@ function App() {
                     <Route element={<PrivateRoute />}>
                         <Route path="/home" element={<Home />} />
                         <Route path="/jobs/create" element={<CreateJob />} />
+                        <Route path="/jobs/:id" element={<JobDetail />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route
                             path="/settings/change-password"

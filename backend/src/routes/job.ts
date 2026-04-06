@@ -88,6 +88,46 @@ jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
 });
 
 jobRoutes.get(
+    "/:id/details",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const jobId: ObjectId = validationMethods.common.id(req.params.id);
+
+            const job: JobDocument = await jobDataMethods.getJobById(
+                jobId.toString(),
+            );
+            const user = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            if (job.ownerId.toString() !== user._id.toString())
+                throw new ValidationError(403, "You do not own this job.");
+
+            const details = await jobDataMethods.getJobWithDetails(
+                jobId.toString(),
+            );
+            return res.status(200).json(details);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+jobRoutes.get(
     "/:id/tasks",
     async (req: AuthenticatedRequest, res: Response) => {
         try {
