@@ -20,7 +20,7 @@ import {
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, 
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
         if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
             cb(null, true);
@@ -142,9 +142,9 @@ taskRoutes.post(
                     .json({ error: "No image file provided." });
             }
 
-            // Build a unique S3 key: tasks/<taskId>/<uuid><ext>
+            const task = await taskDataMethods.getTaskById(taskId.toString());
             const ext = path.extname(req.file.originalname) || ".jpg";
-            const s3Key = `tasks/${taskId.toString()}/${randomUUID()}${ext}`;
+            const s3Key = `${task.jobId.toString()}/${taskId.toString()}/${randomUUID()}${ext}`;
 
             await s3.send(
                 new PutObjectCommand({
@@ -157,12 +157,10 @@ taskRoutes.post(
 
             await assetDataMethods.createAsset(taskId, s3Key, "s3");
 
-            return res
-                .status(201)
-                .json({
-                    message: "Asset successfully uploaded to task.",
-                    key: s3Key,
-                });
+            return res.status(201).json({
+                message: "Asset successfully uploaded to task.",
+                key: s3Key,
+            });
         } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
