@@ -161,31 +161,17 @@ jobRoutes.post(
     authMiddleware.authenticateOwnerRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
-            const { job, tasks } =
-                validationMethods.request.job.createWithTasks(req);
-
             const owner = await userDataMethods.getUserByEmail(
                 req.user.token.email,
             );
-            job.ownerId = owner._id;
+            req.body.ownerId = owner._id.toString();
+            const job = validationMethods.request.job.create(req);
 
-            const jobId = await jobDataMethods.createJob(job);
+            const jobId: string = (
+                await jobDataMethods.createJob(job)
+            ).toString();
 
-            const taskIds: ObjectId[] = [];
-            for (const t of tasks) {
-                const taskDoc: TaskDocument = {
-                    jobId: jobId,
-                    description: t.description,
-                    schema: t.schema,
-                    assignedLabelerId: null,
-                    assignedReviewerId: null,
-                    status: "unlabeled",
-                };
-                const taskId = await taskDataMethods.createTask(taskDoc);
-                taskIds.push(taskId);
-            }
-
-            return res.status(201).json({ jobId, taskIds });
+            return res.status(201).json({ jobId: jobId });
         } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
