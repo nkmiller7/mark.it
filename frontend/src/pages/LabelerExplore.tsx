@@ -187,7 +187,7 @@ export default function LabelerExplore() {
                                             <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                                 {tasks[job._id].length} tasks
                                             </span>
-                                            <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs text-blue-600">
+                                            <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                                 {
                                                     tasks[job._id].filter(
                                                         (t) =>

@@ -256,4 +256,34 @@ taskRoutes.patch(
     },
 );
 
+taskRoutes.patch(
+    "/:id/label",
+    authMiddleware.authenticateLabelerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const { label } = req.body;
+            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            await taskDataMethods.submitTaskLabel(taskId.toString(), user._id.toString(), label);
+            return res.status(200).json({ message: "Task successfully labeled." });
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
 export { taskRoutes };

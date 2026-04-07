@@ -7,6 +7,7 @@ interface TaskDocument {
     jobId: ObjectId;
     description: string;
     schema: string[];
+    label: string | null;
     assignedLabelerId: ObjectId | null;
     assignedReviewerId: ObjectId | null;
     status: "unlabeled" | "labeled" | "reviewed";
@@ -54,6 +55,7 @@ const taskDataMethods = {
             ? validationMethods.common.id(task.assignedReviewerId)
             : null;
         task.status = validationMethods.task.status(task.status);
+        task.label = null;
 
         const tasksCol = await tasksCollection();
         const insertInfo = await tasksCol.insertOne(task);
@@ -97,6 +99,30 @@ const taskDataMethods = {
         return tasks;
     },
 
+    submitTaskLabel: async (taskId: string, userId: string, label: string): Promise<void> => {
+        const mongoTaskId = validationMethods.common.id(taskId);
+        const mongoUserId = validationMethods.common.id(userId);
+
+        const tasksCol = await tasksCollection();
+        const task: TaskDocument = await tasksCol.findOne({ _id: mongoTaskId });
+        if (task === null) {
+            throw new DataError(404, "Task not found.");
+        }
+        if (task.assignedLabelerId?.toString() !== mongoUserId.toString()) {
+            throw new DataError(403, "You are not assigned to this task.");
+        }
+        if (task.status !== "unlabeled") {
+            throw new DataError(400, "Task is not unlabeled.");
+        }
+
+        label = validationMethods.asset.label(label, task.schema);
+
+        await tasksCol.updateOne(
+            { _id: mongoTaskId },
+            { $set: { status: "labeled", label: label } },
+        );
+    },
+
     claimTask: async (
         taskId: string,
         userId: string,
@@ -106,25 +132,23 @@ const taskDataMethods = {
         const mongoUserId = validationMethods.common.id(userId);
 
         const tasksCol = await tasksCollection();
-        const task: TaskDocument = await tasksCol.findOne({
-            _id: mongoTaskId,
-        });
-        if (task === null) throw new DataError(404, "Task not found.");
 
         if (role === "labeler") {
-            if (task.assignedLabelerId !== null)
-                throw new DataError(400, "Task already has a labeler.");
-            await tasksCol.updateOne(
-                { _id: mongoTaskId },
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedLabelerId: null },
                 { $set: { assignedLabelerId: mongoUserId } },
             );
+            if (result === null) {
+                throw new DataError(400, "Task not found or already claimed.");
+            }
         } else {
-            if (task.assignedReviewerId !== null)
-                throw new DataError(400, "Task already has a reviewer.");
-            await tasksCol.updateOne(
-                { _id: mongoTaskId },
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedReviewerId: null },
                 { $set: { assignedReviewerId: mongoUserId } },
             );
+            if (result === null) {
+                throw new DataError(400, "Task not found or already claimed.");
+            }
         }
     },
 };

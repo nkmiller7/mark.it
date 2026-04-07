@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 interface Task {
@@ -10,9 +11,8 @@ interface Task {
 }
 
 export default function LabelerHome() {
-    // still have to add the actual page that lets you work on the tasks
-
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -84,14 +84,13 @@ export default function LabelerHome() {
                                     key={task._id}
                                     className="rounded-lg border border-gray-200 bg-white overflow-hidden text-sm flex items-stretch"
                                 >
-                                    <div className="w-1 shrink-0 bg-blue-400" />
                                     <div className="flex items-start justify-between gap-4 p-4 flex-1 min-w-0">
                                         <div className="space-y-1 min-w-0">
                                             <div className="font-semibold text-gray-900 truncate">{task.description}</div>
                                             <div className="text-xs text-gray-500">{task.jobDescription}</div>
                                             <div className="text-xs text-gray-400">Due {new Date(task.jobDeadline).toLocaleDateString()}</div>
                                         </div>
-                                        <button className="shrink-0 rounded-lg border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition">
+                                        <button onClick={() => navigate(`/tasks/label/${task._id}`)} className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
                                             Work on Task
                                         </button>
                                     </div>
@@ -118,10 +117,14 @@ export default function LabelerHome() {
                                     key={task._id}
                                     className="rounded-lg border border-gray-200 bg-white overflow-hidden text-sm flex items-stretch"
                                 >
-                                    <div className="w-1 shrink-0 bg-green-400" />
-                                    <div className="p-4 space-y-1">
-                                        <div className="font-semibold text-gray-900">{task.description}</div>
-                                        <div className="text-xs text-gray-500">{task.jobDescription}</div>
+                                    <div className="flex items-start justify-between gap-4 p-4 flex-1 min-w-0">
+                                        <div className="space-y-1 min-w-0">
+                                            <div className="font-semibold text-gray-900 truncate">{task.description}</div>
+                                            <div className="text-xs text-gray-500">{task.jobDescription}</div>
+                                        </div>
+                                        <button onClick={() => navigate(`/tasks/label/${task._id}`)} className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
+                                            View
+                                        </button>
                                     </div>
                                 </div>
                             ))}
