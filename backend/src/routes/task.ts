@@ -41,6 +41,38 @@ const s3 = new S3Client({
 const taskRoutes = Router();
 
 taskRoutes.get(
+    "/mine",
+    authMiddleware.authenticateLabelerOrReviewerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const user = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            const tasks = await taskDataMethods.getTasksByUserId(
+                user._id.toString(),
+            );
+            return res.status(200).json(tasks);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+taskRoutes.get(
     "/:id",
     authMiddleware.authenticateRequest,
     async (req: AuthenticatedRequest, res: Response) => {

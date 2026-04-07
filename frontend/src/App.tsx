@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
 import ForgotPassword from "./pages/ForgotPassword";
+import Explore from "./pages/Explore";
 
 function ScrollToHash() {
     const { pathname, hash } = useLocation();
@@ -46,10 +47,8 @@ function App() {
                         <Route path="/jobs/create" element={<CreateJob />} />
                         <Route path="/jobs/:id" element={<JobDetail />} />
                         <Route path="/settings" element={<Settings />} />
-                        <Route
-                            path="/settings/change-password"
-                            element={<ChangePassword />}
-                        />
+                        <Route path="/settings/change-password" element={<ChangePassword />} />
+                        <Route path="/explore" element = {<Explore />} />
                     </Route>
                     <Route path="*" element={<NotFound />} />
                 </Routes>

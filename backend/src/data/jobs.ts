@@ -46,7 +46,7 @@ const jobDataMethods = {
     },
 
     getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
-        const validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.user.rating(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
@@ -59,7 +59,7 @@ const jobDataMethods = {
     },
 
     getJobsByReviewerRating: async (rating: number): Promise<JobDocument[]> => {
-        const validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.user.rating(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol

@@ -12,6 +12,11 @@ interface TaskDocument {
     status: "unlabeled" | "labeled" | "reviewed";
 }
 
+interface TaskWithJob extends TaskDocument {
+    jobDescription: string;
+    jobDeadline: string;
+}
+
 const taskDataMethods = {
     getTaskById: async (id: string): Promise<TaskDocument> => {
         const mongoId = validationMethods.common.id(id);
@@ -58,6 +63,40 @@ const taskDataMethods = {
         return insertInfo.insertedId;
     },
 
+    getTasksByUserId: async (userId: string): Promise<TaskWithJob[]> => {
+        const mongoUserId = validationMethods.common.id(userId);
+
+        const tasksCol = await tasksCollection();
+        const tasks = await tasksCol.aggregate<TaskWithJob>([
+                {
+                    $match: {
+                        $or: [
+                            { assignedLabelerId: mongoUserId },
+                            { assignedReviewerId: mongoUserId },
+                        ],
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        localField: "jobId",
+                        foreignField: "_id",
+                        as: "_job",
+                    },
+                },
+                {
+                    $addFields: {
+                        jobDescription: { $arrayElemAt: ["$_job.description", 0] },
+                        jobDeadline: { $arrayElemAt: ["$_job.deadlineDate", 0] },
+                    },
+                },
+                { $project: { _job: 0 } },
+            ])
+            .toArray();
+
+        return tasks;
+    },
+
     claimTask: async (
         taskId: string,
         userId: string,
@@ -90,4 +129,4 @@ const taskDataMethods = {
     },
 };
 
-export { TaskDocument, taskDataMethods };
+export { TaskDocument, TaskWithJob, taskDataMethods };
