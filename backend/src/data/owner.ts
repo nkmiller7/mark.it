@@ -9,7 +9,7 @@ import { ObjectId } from "mongodb";
 import { TaskDocument } from "./tasks";
 import { assetDataMethods } from "./assets";
 import fs from "fs";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import * as dotenv from "dotenv";
 dotenv.config();
 const mode = process.env.MODE;
@@ -73,6 +73,29 @@ const ownerDataMethods = {
             await assetDataMethods.createAsset(taskId, asset.key, asset.source);
         }
     },
+    deleteImage: async(
+        key: any,
+    ) => {
+        const s3 = new S3Client({
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+                },
+                region: process.env.AWS_REGION,
+            });
+        const Objects = [{Key: key}];
+        const input = {
+            Bucket: process.env.S3_BUCKET_NAME,
+            Delete: {
+                Objects: Objects,
+                Quiet: false
+            }
+        }
+        const command = new DeleteObjectsCommand(input);
+        const response = await s3.send(command);
+        return response;
+        
+    }
 };
 
 export { ownerDataMethods };

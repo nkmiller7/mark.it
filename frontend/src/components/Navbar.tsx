@@ -4,10 +4,9 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
     const { currentUser, userData, signOut, loading } = useAuth();
+    const isOwner = userData?.type === "owner";
     const [mobileOpen, setMobileOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
-
-    const isOwner = userData?.type === "owner";
 
     return (
         <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
@@ -21,35 +20,25 @@ export default function Navbar() {
                     {loading ? null : currentUser ? (
                         <>
                             <Link
+                                to="/explore"
+                                className="text-sm text-gray-600 hover:text-gray-900 transition"
+                            >
+                                Explore
+                            </Link>
+                            <Link
                                 to="/home"
                                 className="text-sm text-gray-600 hover:text-gray-900 transition"
                             >
                                 Dashboard
                             </Link>
-                            {isOwner ? (
+                            {isOwner && (
                                 <Link
                                     to="/jobs/create"
                                     className="text-sm text-gray-600 hover:text-gray-900 transition"
                                 >
                                     Create Job
                                 </Link>
-                            ) : (
-                                <>
-                                    <Link
-                                        to="/jobs"
-                                        className="text-sm text-gray-600 hover:text-gray-900 transition"
-                                    >
-                                        Jobs
-                                    </Link>
-                                    <Link
-                                        to="/tasks"
-                                        className="text-sm text-gray-600 hover:text-gray-900 transition"
-                                    >
-                                        Tasks
-                                    </Link>
-                                </>
                             )}
-
                             <div className="relative">
                                 <button
                                     onClick={() => setProfileOpen(!profileOpen)}
@@ -155,7 +144,7 @@ export default function Navbar() {
                                 >
                                     Dashboard
                                 </Link>
-                                {isOwner ? (
+                                {isOwner && (
                                     <Link
                                         to="/jobs/create"
                                         className="text-sm text-gray-600"
@@ -163,23 +152,6 @@ export default function Navbar() {
                                     >
                                         Create Job
                                     </Link>
-                                ) : (
-                                    <>
-                                        <Link
-                                            to="/jobs"
-                                            className="text-sm text-gray-600"
-                                            onClick={() => setMobileOpen(false)}
-                                        >
-                                            Jobs
-                                        </Link>
-                                        <Link
-                                            to="/tasks"
-                                            className="text-sm text-gray-600"
-                                            onClick={() => setMobileOpen(false)}
-                                        >
-                                            Tasks
-                                        </Link>
-                                    </>
                                 )}
                                 <Link
                                     to="/settings"

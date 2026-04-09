@@ -41,6 +41,38 @@ const s3 = new S3Client({
 const taskRoutes = Router();
 
 taskRoutes.get(
+    "/mine",
+    authMiddleware.authenticateLabelerOrReviewerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const user = await userDataMethods.getUserByEmail(
+                req.user.token.email,
+            );
+            const tasks = await taskDataMethods.getTasksByUserId(
+                user._id.toString(),
+            );
+            return res.status(200).json(tasks);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+taskRoutes.get(
     "/:id",
     authMiddleware.authenticateRequest,
     async (req: AuthenticatedRequest, res: Response) => {
@@ -70,13 +102,19 @@ taskRoutes.get(
 
 taskRoutes.get(
     "/:id/assets",
-    authMiddleware.authenticateRequest,
+    authMiddleware.authenticateLabelerOrReviewerRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
-            const assets = await assetDataMethods.getAssetsByTask(
-                taskId.toString(),
-            );
+            const task = await taskDataMethods.getTaskById(taskId.toString());
+            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            const isAssigned =
+                task.assignedLabelerId?.toString() === user._id.toString() ||
+                task.assignedReviewerId?.toString() === user._id.toString();
+            if (!isAssigned) {
+                throw new ValidationError(403, "You are not assigned to this task.");
+            }
+            const assets = await assetDataMethods.getAssetsByTask(taskId.toString());
             return res.status(200).json(assets);
         } catch (e) {
             switch (true) {
@@ -223,5 +261,65 @@ taskRoutes.patch(
         }
     },
 );
+
+taskRoutes.patch(
+    "/:id/unclaim",
+    authMiddleware.authenticateLabelerOrReviewerRequest,
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            if (user.type === "owner") {
+                throw new ValidationError(403, "Owners cannot unclaim tasks.");
+            }
+            await taskDataMethods.unclaimTask(taskId.toString(), user._id.toString(), user.type);
+            return res.status(200).json({ message: "Task successfully unclaimed." });
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+taskRoutes.delete(
+    "/:taskId",
+    authMiddleware.authenticateOwnerRequest,
+    async(req: AuthenticatedRequest, res:Response) => {
+        try {
+            const mongoId = validationMethods.common.id(req.params.taskId);
+            await taskDataMethods.deleteTask(String(mongoId));
+            return res.status(200).json("Successfully deleted task");
+        }catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    }
+)
 
 export { taskRoutes };

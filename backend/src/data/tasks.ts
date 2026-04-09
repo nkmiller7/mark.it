@@ -1,6 +1,6 @@
 import { validationMethods } from "@/validation";
-
-import { tasksCollection, DataError } from "@/data/collections";
+import { assetDataMethods } from './assets';
+import { tasksCollection, assetsCollection, DataError } from "@/data/collections";
 import { ObjectId } from "mongodb";
 
 interface TaskDocument {
@@ -12,12 +12,17 @@ interface TaskDocument {
     status: "unlabeled" | "labeled" | "reviewed";
 }
 
+interface TaskWithJob extends TaskDocument {
+    jobDescription: string;
+    jobDeadline: string;
+}
+
 const taskDataMethods = {
     getTaskById: async (id: string): Promise<TaskDocument> => {
         const mongoId = validationMethods.common.id(id);
 
         const tasksCol = await tasksCollection();
-        const task: TaskDocument = await tasksCol.findOne({
+        const task: TaskDocument|null = await tasksCol.findOne({
             _id: mongoId,
         });
         if (task === null) throw new DataError(404, "Task not found.");
@@ -58,6 +63,78 @@ const taskDataMethods = {
         return insertInfo.insertedId;
     },
 
+    getTasksByUserId: async (userId: string): Promise<TaskWithJob[]> => {
+        const mongoUserId = validationMethods.common.id(userId);
+
+        const tasksCol = await tasksCollection();
+        const tasks = await tasksCol.aggregate<TaskWithJob>([
+                {
+                    $match: {
+                        $or: [
+                            { assignedLabelerId: mongoUserId },
+                            { assignedReviewerId: mongoUserId },
+                        ],
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        localField: "jobId",
+                        foreignField: "_id",
+                        as: "_job",
+                    },
+                },
+                {
+                    $addFields: {
+                        jobDescription: { $arrayElemAt: ["$_job.description", 0] },
+                        jobDeadline: { $arrayElemAt: ["$_job.deadlineDate", 0] },
+                    },
+                },
+                { $project: { _job: 0 } },
+            ])
+            .toArray();
+
+        return tasks;
+    },
+
+    markTaskLabeled: async (taskId: string): Promise<void> => {
+        const mongoTaskId = validationMethods.common.id(taskId);
+        const tasksCol = await tasksCollection();
+        await tasksCol.updateOne(
+            { _id: mongoTaskId },
+            { $set: { status: "labeled" } },
+        );
+    },
+
+    unclaimTask: async (
+        taskId: string,
+        userId: string,
+        role: "labeler" | "reviewer",
+    ): Promise<void> => {
+        const mongoTaskId = validationMethods.common.id(taskId);
+        const mongoUserId = validationMethods.common.id(userId);
+
+        const tasksCol = await tasksCollection();
+
+        if (role === "labeler") {
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedLabelerId: mongoUserId, status: "unlabeled" },
+                { $set: { assignedLabelerId: null } },
+            );
+            if (result === null) {
+                throw new DataError(400, "Task not found, not assigned to you, or already labeled.");
+            }
+        } else {
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedReviewerId: mongoUserId },
+                { $set: { assignedReviewerId: null } },
+            );
+            if (result === null) {
+                throw new DataError(400, "Task not found or not assigned to you.");
+            }
+        }
+    },
+
     claimTask: async (
         taskId: string,
         userId: string,
@@ -67,27 +144,41 @@ const taskDataMethods = {
         const mongoUserId = validationMethods.common.id(userId);
 
         const tasksCol = await tasksCollection();
-        const task: TaskDocument = await tasksCol.findOne({
-            _id: mongoTaskId,
-        });
-        if (task === null) throw new DataError(404, "Task not found.");
 
         if (role === "labeler") {
-            if (task.assignedLabelerId !== null)
-                throw new DataError(400, "Task already has a labeler.");
-            await tasksCol.updateOne(
-                { _id: mongoTaskId },
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedLabelerId: null },
                 { $set: { assignedLabelerId: mongoUserId } },
             );
+            if (result === null) {
+                throw new DataError(400, "Task not found or already claimed.");
+            }
         } else {
-            if (task.assignedReviewerId !== null)
-                throw new DataError(400, "Task already has a reviewer.");
-            await tasksCol.updateOne(
-                { _id: mongoTaskId },
+            const result = await tasksCol.findOneAndUpdate(
+                { _id: mongoTaskId, assignedReviewerId: null },
                 { $set: { assignedReviewerId: mongoUserId } },
             );
+            if (result === null) {
+                throw new DataError(400, "Task not found or already claimed.");
+            }
         }
     },
+    deleteTask: async (id: string) => {
+        const tasksCol = await tasksCollection();
+        const assetsCol = await assetsCollection();
+        const mongoId = validationMethods.common.id(id);
+        const task = await tasksCol.findOne({_id: mongoId});
+        if(task === null) throw new DataError(404, "Task not found.");
+        const jobTasks = await tasksCol.find({jobId: task.jobId}).toArray();
+        if(jobTasks.length < 2){
+            throw new DataError(400, "Cannot remove task if job only has one task.");
+        }
+        const taskAssets = await assetsCol.find({taskId: mongoId}).toArray();
+        for(let asset of taskAssets){
+           await assetDataMethods.deleteAsset(asset._id);
+        }
+        await tasksCol.findOneAndDelete({_id: mongoId});
+    }
 };
 
-export { TaskDocument, taskDataMethods };
+export { TaskDocument, TaskWithJob, taskDataMethods };

@@ -23,14 +23,7 @@ export default function Home() {
                 />
             );
         case "labeler":
-            return (
-                <LabelerHome
-                    firstName={userData.firstName!}
-                    lastName={userData.lastName!}
-                    email={userData.email}
-                    rating={userData.rating!}
-                />
-            );
+            return <LabelerHome />;
         case "reviewer":
             return (
                 <ReviewerHome

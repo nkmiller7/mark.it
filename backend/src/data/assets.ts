@@ -2,6 +2,7 @@ import { validationMethods } from "@/validation";
 import { assetsCollection, tasksCollection, usersCollection, DataError } from "@/data/collections";
 import { ObjectId } from "mongodb";
 import { TaskDocument } from "./tasks";
+import { ownerDataMethods } from "./owner";
 
 interface AssetDocument{
     taskId: ObjectId;
@@ -18,7 +19,7 @@ const assetDataMethods = {
     getAssetById: async (id: string): Promise<AssetDocument> => {
         const mongoId = validationMethods.common.id(id);
         const assetsCol = await assetsCollection();
-        const asset: AssetDocument = await assetsCol.findOne({
+        const asset  = await assetsCol.findOne({
             _id: mongoId,
         });
         if (asset === null) throw new DataError(404, "Asset not found.");
@@ -63,11 +64,16 @@ const assetDataMethods = {
         const assetsCol = await assetsCollection();
         const taskCol = await tasksCollection();
         const userCol = await usersCollection();
-        const asset: AssetDocument = await assetsCol.findOne({
+        const asset  = await assetsCol.findOne({
             _id: assetId,
         });
         if (asset === null) throw new DataError(404, "Asset not found.");
-        const task: TaskDocument = await taskCol.findOne({_id: asset.taskId});
+        if (asset.status !== "UNLABELED") throw new DataError(400, "Asset has already been labeled.");
+        const task = await taskCol.findOne({_id: asset.taskId});
+        if (task === null) throw new DataError(404, "Task not found.");
+        if (task.assignedLabelerId === null || task.assignedLabelerId.toString() !== labelerId.toString()) {
+            throw new DataError(403, "You are not assigned to this task.");
+        }
         label = validationMethods.asset.label(label, task.schema);
         const user = await userCol.findOne({ _id: labelerId});
         if (user === null) throw new DataError(404, "Labeler not found.");
@@ -89,11 +95,12 @@ const assetDataMethods = {
         const assetsCol = await assetsCollection();
         const taskCol = await tasksCollection();
         const userCol = await usersCollection();
-        const asset: AssetDocument = await assetsCol.findOne({
+        const asset  = await assetsCol.findOne({
             _id: assetId,
         });
         if (asset === null) throw new DataError(404, "Asset not found.");
-        const task: TaskDocument = await taskCol.findOne({_id: asset.taskId});
+        const task = await taskCol.findOne({_id: asset.taskId});
+        if (task === null) throw new DataError(404, "Task not found.");
         reviewedLabel = validationMethods.asset.label(reviewedLabel, task.schema);
         const user = await userCol.findOne({ _id: reviewerId});
         if (user === null) throw new DataError(404, "Reviewer not found.");
@@ -108,7 +115,26 @@ const assetDataMethods = {
                 }
             }
         )
-    }
+    },
+    deleteAsset: async (assetId: ObjectId) => {
+        const mongoId = validationMethods.common.id(assetId);
+        const assetsCol = await assetsCollection();
+        try{
+            const asset  = await assetsCol.findOne({
+                _id: mongoId
+            });
+            if(asset === null){
+                throw new DataError(404, "Asset not found.");
+            }
+            const key = asset.key;
+            await ownerDataMethods.deleteImage(key);
+        }catch(e){
+            console.log(e);
+        }
+        await assetsCol.deleteOne({
+            _id: mongoId
+        })
+    },
 };
 
 export {AssetDocument, assetDataMethods};

@@ -6,7 +6,7 @@ import {
     usersCollection,
 } from "@/data/collections";
 import { UserDocument } from "@/data/users";
-
+import { taskDataMethods } from '@/data/tasks';
 import { validationMethods } from "@/validation";
 
 interface JobDocument {
@@ -24,7 +24,7 @@ const jobDataMethods = {
         const mongoId = validationMethods.common.id(id);
 
         const jobsCol = await jobsCollection();
-        const job: JobDocument = await jobsCol.findOne({
+        const job: JobDocument|null = await jobsCol.findOne({
             _id: mongoId,
         });
         if (job === null) throw new DataError(404, "Job not found.");
@@ -46,7 +46,7 @@ const jobDataMethods = {
     },
 
     getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
-        const validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.user.rating(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
@@ -59,7 +59,7 @@ const jobDataMethods = {
     },
 
     getJobsByReviewerRating: async (rating: number): Promise<JobDocument[]> => {
-        const validatedRating = validationMethods.job.ratingRequired(rating);
+        const validatedRating = validationMethods.user.rating(rating);
 
         const jobsCol = await jobsCollection();
         const jobs: JobDocument[] = await jobsCol
@@ -256,6 +256,22 @@ const jobDataMethods = {
             contributors: { labelers, reviewers },
         };
     },
+    deleteJob: async (
+        id: ObjectId
+    ) => {
+        const mongoId = validationMethods.common.id(id);
+        const jobsCol = await jobsCollection();
+        const tasksCol = await tasksCollection();
+        const job: JobDocument|null = await jobsCol.findOne({
+            _id: mongoId,
+        });
+        if (job === null) throw new DataError(404, "Job not found."); 
+        const jobTasks = await tasksCol.find({jobId: mongoId}).toArray();
+        for(let task of jobTasks){
+            await taskDataMethods.deleteTask(String(task._id));
+        }
+        await jobsCol.deleteOne(mongoId);
+    }
 };
 
 export { JobDocument, jobDataMethods };

@@ -275,6 +275,34 @@ jobRoutes.post(
             }
         }
     }
+);
+
+jobRoutes.delete(
+    "/:jobId",
+    authMiddleware.authenticateOwnerRequest,
+    async(req: AuthenticatedRequest, res:Response) => {
+        try {
+            const mongoId = validationMethods.common.id(req.params.jobId);
+            await jobDataMethods.deleteJob(mongoId);
+            return res.status(200).json("Successfully deleted job");
+        }catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    }
 )
 
 export { jobRoutes };

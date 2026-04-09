@@ -28,8 +28,9 @@ class DataError extends Error {
     }
 }
 
+const _usersCollection = getCollection<UserDocument>("users");
 const usersCollection = <T extends UserDocument>(): Promise<Collection<T>> =>
-    getCollection<T>("users")();
+    _usersCollection() as unknown as Promise<Collection<T>>;
 const jobsCollection = getCollection<JobDocument>("jobs");
 const tasksCollection = getCollection<TaskDocument>("tasks");
 const assetsCollection = getCollection<AssetDocument>("assets");
