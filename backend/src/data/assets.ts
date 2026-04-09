@@ -67,7 +67,12 @@ const assetDataMethods = {
             _id: assetId,
         });
         if (asset === null) throw new DataError(404, "Asset not found.");
+        if (asset.status !== "UNLABELED") throw new DataError(400, "Asset has already been labeled.");
         const task: TaskDocument = await taskCol.findOne({_id: asset.taskId});
+        if (task === null) throw new DataError(404, "Task not found.");
+        if (task.assignedLabelerId === null || task.assignedLabelerId.toString() !== labelerId.toString()) {
+            throw new DataError(403, "You are not assigned to this task.");
+        }
         label = validationMethods.asset.label(label, task.schema);
         const user = await userCol.findOne({ _id: labelerId});
         if (user === null) throw new DataError(404, "Labeler not found.");

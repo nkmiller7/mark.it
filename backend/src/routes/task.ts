@@ -102,13 +102,19 @@ taskRoutes.get(
 
 taskRoutes.get(
     "/:id/assets",
-    authMiddleware.authenticateRequest,
+    authMiddleware.authenticateLabelerOrReviewerRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
-            const assets = await assetDataMethods.getAssetsByTask(
-                taskId.toString(),
-            );
+            const task = await taskDataMethods.getTaskById(taskId.toString());
+            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            const isAssigned =
+                task.assignedLabelerId?.toString() === user._id.toString() ||
+                task.assignedReviewerId?.toString() === user._id.toString();
+            if (!isAssigned) {
+                throw new ValidationError(403, "You are not assigned to this task.");
+            }
+            const assets = await assetDataMethods.getAssetsByTask(taskId.toString());
             return res.status(200).json(assets);
         } catch (e) {
             switch (true) {
@@ -257,15 +263,17 @@ taskRoutes.patch(
 );
 
 taskRoutes.patch(
-    "/:id/label",
-    authMiddleware.authenticateLabelerRequest,
+    "/:id/unclaim",
+    authMiddleware.authenticateLabelerOrReviewerRequest,
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const taskId: ObjectId = validationMethods.common.id(req.params.id);
-            const { label } = req.body;
             const user = await userDataMethods.getUserByEmail(req.user.token.email);
-            await taskDataMethods.submitTaskLabel(taskId.toString(), user._id.toString(), label);
-            return res.status(200).json({ message: "Task successfully labeled." });
+            if (user.type === "owner") {
+                throw new ValidationError(403, "Owners cannot unclaim tasks.");
+            }
+            await taskDataMethods.unclaimTask(taskId.toString(), user._id.toString(), user.type);
+            return res.status(200).json({ message: "Task successfully unclaimed." });
         } catch (e) {
             switch (true) {
                 case e instanceof ValidationError: {

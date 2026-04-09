@@ -39,6 +39,21 @@ export default function LabelerHome() {
         if (currentUser) fetchTasks();
     }, [currentUser]);
 
+    const unclaimTask = async (taskId: string) => {
+        const token = await currentUser?.getIdToken();
+        const res = await fetch(`/api/task/${taskId}/unclaim`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+        });
+        if (!res.ok) {
+            return;
+        }
+        setTasks((prev) => prev.filter((t) => t._id !== taskId));
+    };
+
     const incomplete = tasks.filter((t) => t.status === "unlabeled");
     const complete = tasks.filter(
         (t) => t.status === "labeled" || t.status === "reviewed",
@@ -90,9 +105,14 @@ export default function LabelerHome() {
                                             <div className="text-xs text-gray-500">{task.jobDescription}</div>
                                             <div className="text-xs text-gray-400">Due {new Date(task.jobDeadline).toLocaleDateString()}</div>
                                         </div>
-                                        <button onClick={() => navigate(`/tasks/label/${task._id}`)} className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
-                                            Work on Task
-                                        </button>
+                                        <div className="flex flex-col gap-2 shrink-0">
+                                            <button onClick={() => navigate(`/tasks/label/${task._id}`)} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
+                                                Work on Task
+                                            </button>
+                                            <button onClick={() => unclaimTask(task._id)} className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 transition">
+                                                Unclaim
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -117,14 +137,9 @@ export default function LabelerHome() {
                                     key={task._id}
                                     className="rounded-lg border border-gray-200 bg-white overflow-hidden text-sm flex items-stretch"
                                 >
-                                    <div className="flex items-start justify-between gap-4 p-4 flex-1 min-w-0">
-                                        <div className="space-y-1 min-w-0">
-                                            <div className="font-semibold text-gray-900 truncate">{task.description}</div>
-                                            <div className="text-xs text-gray-500">{task.jobDescription}</div>
-                                        </div>
-                                        <button onClick={() => navigate(`/tasks/label/${task._id}`)} className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
-                                            View
-                                        </button>
+                                    <div className="p-4 space-y-1 min-w-0">
+                                        <div className="font-semibold text-gray-900 truncate text-sm">{task.description}</div>
+                                        <div className="text-xs text-gray-500">{task.jobDescription}</div>
                                     </div>
                                 </div>
                             ))}

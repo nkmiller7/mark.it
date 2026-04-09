@@ -77,7 +77,7 @@ export default function LabelerExplore() {
         }
         if (isMine) {
             return (
-                <button className="shrink-0 rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                <button onClick={() => unclaimTask(jobId, task._id)} className="shrink-0 rounded-lg bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 transition">
                     Unclaim
                 </button>
             );
@@ -90,7 +90,7 @@ export default function LabelerExplore() {
             );
         }
         return (
-            <button onClick={() => claimTask(jobId, task._id)} className="shrink-0 rounded-lg border border-blue-300 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition">
+            <button onClick={() => claimTask(jobId, task._id)} className="shrink-0 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 transition">
                 Claim
             </button>
         );
@@ -102,6 +102,26 @@ export default function LabelerExplore() {
         } else {
             setExpandedJob(jobId);
         }
+    };
+
+    const unclaimTask = async (jobId: string, taskId: string) => {
+        const token = await currentUser?.getIdToken();
+        const res = await fetch(`/api/task/${taskId}/unclaim`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+        });
+        if (!res.ok) {
+            return;
+        }
+        setTasks((prev) => ({
+            ...prev,
+            [jobId]: prev[jobId].map((t) =>
+                t._id === taskId ? { ...t, assignedLabelerId: null } : t,
+            ),
+        }));
     };
 
     const claimTask = async (jobId: string, taskId: string) => {
@@ -185,17 +205,10 @@ export default function LabelerExplore() {
                                     {tasks[job._id]?.length > 0 && (
                                         <>
                                             <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
-                                                {tasks[job._id].length} tasks
+                                                {tasks[job._id].filter((t) => t.status === "labeled" || t.status === "reviewed").length} / {tasks[job._id].length} completed
                                             </span>
                                             <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
-                                                {
-                                                    tasks[job._id].filter(
-                                                        (t) =>
-                                                            t.status ===
-                                                            "unlabeled",
-                                                    ).length
-                                                }{" "}
-                                                unlabeled
+                                                {tasks[job._id].filter((t) => t.status === "unlabeled").length} unlabeled
                                             </span>
                                         </>
                                     )}

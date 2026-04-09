@@ -8,9 +8,13 @@ interface Task {
     description: string;
     schema: string[];
     status: "unlabeled" | "labeled" | "reviewed";
-    label: string | null;
     assignedLabelerId: string | null;
-    assignedReviewerId: string | null;
+}
+
+interface Asset {
+    _id: string;
+    status: "UNLABELED" | "LABELED" | "REVIEWED";
+    label: string | null;
 }
 
 interface Job {
@@ -20,40 +24,23 @@ interface Job {
 export default function TaskDetailLabeler() {
     const { id } = useParams();
     const { currentUser, userData } = useAuth();
+    const navigate = useNavigate();
     const [task, setTask] = useState<Task | null>(null);
     const [job, setJob] = useState<Job | null>(null);
+    const [assets, setAssets] = useState<Asset[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [selected, setSelected] = useState<string | null>(null);
+    const [confirmed, setConfirmed] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [selected, setSelected] = useState<string | null>(null);
     const [submitError, setSubmitError] = useState("");
 
-    const navigate = useNavigate();
-
-    const handleSubmit = async () => {
-        if (!selected) {
-            return;
-        }
-        setSubmitError("");
-        const token = await currentUser?.getIdToken();
-        const res = await fetch(`/api/task/${id}/label`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ label: selected }),
-        });
-        if (!res.ok) {
-            setSubmitError("Failed to submit label. Please try again.");
-            return;
-        }
-        navigate("/home");
-    };
-
     useEffect(() => {
-        const fetchTask = async () => {
+        const fetchData = async () => {
             try {
                 const token = await currentUser?.getIdToken();
+
                 const taskRes = await fetch(`/api/task/${id}`, {
                     headers: { authorization: `Bearer ${token}` },
                 });
@@ -73,6 +60,21 @@ export default function TaskDetailLabeler() {
                 }
                 const jobData: Job = await jobRes.json();
                 setJob(jobData);
+
+                const assetRes = await fetch(`/api/task/${id}/assets`, {
+                    headers: { authorization: `Bearer ${token}` },
+                });
+                if (assetRes.status === 404) {
+                    setAssets([]);
+                } else if (!assetRes.ok) {
+                    setError("Failed to load assets.");
+                    return;
+                } else {
+                    const assetData: Asset[] = await assetRes.json();
+                    setAssets(assetData);
+                    const firstUnlabeled = assetData.findIndex((a) => a.status === "UNLABELED");
+                    setCurrentIndex(firstUnlabeled === -1 ? 0 : firstUnlabeled);
+                }
             } catch {
                 setError("Failed to load task.");
             } finally {
@@ -80,9 +82,61 @@ export default function TaskDetailLabeler() {
             }
         };
         if (currentUser) {
-            fetchTask();
+            fetchData();
         }
     }, [currentUser, id]);
+
+    useEffect(() => {
+        const fetchImageUrl = async () => {
+            if (assets.length === 0) return;
+            const token = await currentUser?.getIdToken();
+            const res = await fetch(`/api/asset/${assets[currentIndex]._id}/url`, {
+                headers: { authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            setImageUrl(data.url);
+        };
+        fetchImageUrl();
+    }, [currentIndex, assets, currentUser]);
+
+    const handleConfirm = async () => {
+        if (!selected) {
+            return;
+        }
+        setSubmitError("");
+        const token = await currentUser?.getIdToken();
+        const asset = assets[currentIndex];
+        const res = await fetch(`/api/asset/${asset._id}/label`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ label: selected }),
+        });
+        if (!res.ok) {
+            setSubmitError("Failed to submit label. Please try again.");
+            return;
+        }
+        setAssets((prev) =>
+            prev.map((a, i) =>
+                i === currentIndex ? { ...a, status: "LABELED", label: selected } : a,
+            ),
+        );
+        setConfirmed(true);
+    };
+
+    const handleNext = () => {
+        const nextUnlabeled = assets.findIndex((a, i) => i > currentIndex && a.status === "UNLABELED");
+        if (nextUnlabeled !== -1) {
+            setCurrentIndex(nextUnlabeled);
+            setSelected(null);
+            setConfirmed(false);
+        } else {
+            navigate("/home");
+        }
+    };
 
     if (loading) {
         return (
@@ -100,59 +154,93 @@ export default function TaskDetailLabeler() {
         );
     }
 
-    if (
-        userData?.type !== "labeler" ||
-        task.assignedLabelerId !== userData?._id
-    ) {
+    if (userData?.type !== "labeler" || task.assignedLabelerId !== userData?._id || task.status !== "unlabeled") {
         return <Navigate to="/home" />;
     }
 
-    const isReadOnly = task.status === "labeled" || task.status === "reviewed";
+    if (assets.length === 0) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+                <p className="text-gray-500">This task has no assets to label.</p>
+                <button
+                    onClick={() => navigate("/home")}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    const labeled = assets.filter((a) => a.status === "LABELED" || a.status === "REVIEWED").length;
+    const hasMoreUnlabeled = assets.some((a, i) => i !== currentIndex && a.status === "UNLABELED");
+    const isLastAsset = !hasMoreUnlabeled;
 
     return (
         <div className="mx-auto max-w-5xl px-6 py-12">
             <p className="mb-1 text-sm text-gray-500">{job.description}</p>
-            <h1 className="mb-8 text-3xl font-bold text-gray-900">
-                {task.description}
-            </h1>
+            <h1 className="mb-4 text-3xl font-bold text-gray-900">{task.description}</h1>
+
+            <div className="flex items-center gap-3 mb-8">
+                <div className="flex gap-1">
+                    {assets.map((a, i) => (
+                        <div
+                            key={a._id}
+                            className={`h-2 w-6 rounded-full transition-all ${
+                                a.status === "LABELED" || a.status === "REVIEWED"
+                                    ? "bg-blue-500"
+                                    : i === currentIndex
+                                    ? "bg-blue-300"
+                                    : "bg-gray-200"
+                            }`}
+                        />
+                    ))}
+                </div>
+                <span className="text-sm text-gray-400">{labeled} / {assets.length} labeled</span>
+            </div>
+
             <div className="flex gap-8 items-start">
-                <div className="flex-1 rounded-xl border border-gray-200 bg-gray-100 aspect-square flex items-center justify-center">
-                    <p className="text-sm text-gray-400">
-                        PUT IMAGE HERE SOMEHOW FROM S3
-                    </p>
+                <div className="flex-1 rounded-xl border border-gray-200 bg-gray-100 aspect-square flex items-center justify-center overflow-hidden">
+                    {imageUrl ? (
+                        <img src={imageUrl} alt="Asset" className="w-full h-full object-contain" />
+                    ) : (
+                        <p className="text-sm text-gray-400">Loading image...</p>
+                    )}
                 </div>
                 <div className="w-64 shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-6">
+                    <p className="mb-1 text-xs text-gray-400">Image {currentIndex + 1} of {assets.length}</p>
                     <p className="mb-4 text-sm font-semibold text-gray-900">
                         {task.description}
                     </p>
                     <div className="space-y-2">
-                        {task.schema.map((option) => {
-                            const isChosen = isReadOnly
-                                ? option === task.label
-                                : option === selected;
-                            return (
-                                <button
-                                    key={option}
-                                    onClick={() =>
-                                        !isReadOnly && setSelected(option)
-                                    }
-                                    disabled={isReadOnly}
-                                    className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition ${isChosen ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-400 cursor-not-allowed"} ${!isReadOnly && !isChosen ? "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 text-gray-700 cursor-pointer" : ""}`}
-                                >
-                                    {option}
-                                </button>
-                            );
-                        })}
+                        {task.schema.map((option) => (
+                            <button
+                                key={option}
+                                onClick={() => !confirmed && setSelected(option)}
+                                disabled={confirmed}
+                                className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition ${selected === option ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700"} ${!confirmed ? "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 cursor-pointer" : "cursor-not-allowed text-gray-400"}`}
+                            >
+                                {option}
+                            </button>
+                        ))}
                     </div>
                     {submitError && (
                         <p className="mt-3 text-xs text-red-600">{submitError}</p>
                     )}
-                    {!isReadOnly && selected && (
+                    {!confirmed && selected && (
                         <button
-                            onClick={handleSubmit}
+                            onClick={handleConfirm}
                             className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
                         >
                             Confirm
+                        </button>
+                    )}
+                    {confirmed && (
+                        <button
+                            onClick={handleNext}
+                            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                        >
+                            {isLastAsset ? "Finish Task" : "Next Image"}
                         </button>
                     )}
                 </div>
