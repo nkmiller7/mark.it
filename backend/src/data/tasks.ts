@@ -1,6 +1,6 @@
 import { validationMethods } from "@/validation";
-
-import { tasksCollection, DataError } from "@/data/collections";
+import { assetDataMethods } from './assets';
+import { tasksCollection, assetsCollection, DataError } from "@/data/collections";
 import { ObjectId } from "mongodb";
 
 interface TaskDocument {
@@ -22,7 +22,7 @@ const taskDataMethods = {
         const mongoId = validationMethods.common.id(id);
 
         const tasksCol = await tasksCollection();
-        const task: TaskDocument = await tasksCol.findOne({
+        const task: TaskDocument|null = await tasksCol.findOne({
             _id: mongoId,
         });
         if (task === null) throw new DataError(404, "Task not found.");
@@ -163,6 +163,22 @@ const taskDataMethods = {
             }
         }
     },
+    deleteTask: async (id: string) => {
+        const tasksCol = await tasksCollection();
+        const assetsCol = await assetsCollection();
+        const mongoId = validationMethods.common.id(id);
+        const task = await tasksCol.findOne({_id: mongoId});
+        if(task === null) throw new DataError(404, "Task not found.");
+        const jobTasks = await tasksCol.find({jobId: task.jobId}).toArray();
+        if(jobTasks.length < 2){
+            throw new DataError(400, "Cannot remove task if job only has one task.");
+        }
+        const taskAssets = await assetsCol.find({taskId: mongoId}).toArray();
+        for(let asset of taskAssets){
+           await assetDataMethods.deleteAsset(asset._id);
+        }
+        await tasksCol.findOneAndDelete({_id: mongoId});
+    }
 };
 
 export { TaskDocument, TaskWithJob, taskDataMethods };

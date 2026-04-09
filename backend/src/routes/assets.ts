@@ -180,4 +180,32 @@ assetRoutes.patch("/:id/review",
     }
 );
 
+assetRoutes.delete(
+    "/:assetId",
+    authMiddleware.authenticateOwnerRequest,
+    async(req: AuthenticatedRequest, res:Response) => {
+        try {
+            const mongoId = validationMethods.common.id(req.params.assetId);
+            await assetDataMethods.deleteAsset(mongoId);
+            return res.status(200).json("Successfully deleted asset");
+        }catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                case true: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    }
+)
+
 export { assetRoutes };
