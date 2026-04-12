@@ -8,7 +8,8 @@
         "dev": "ts-node -r tsconfig-paths/register ./src/app.ts",
         "prod": "npm run build && npm start",
         "start": "node -r ./register.js ./dist/app.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "seed": "ts-node -r tsconfig-paths/register ./Seed.ts"
     },
     "author": "Noah Miller 20014855",
     "license": "ISC",
@@ -19,6 +20,7 @@
         "dotenv": "^17.4.0",
         "express": "^5.2.1",
         "firebase-admin": "^13.7.0",
+        "mime-types": "^3.0.2",
         "mongodb": "^7.1.0",
         "multer": "^2.1.1",
         "validator": "^13.15.26"
@@ -26,6 +28,7 @@
     "devDependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
+        "@types/mime-types": "^3.0.1",
         "@types/multer": "^2.1.0",
         "@types/node": "^25.3.5",
         "prettier": "^3.8.1",
