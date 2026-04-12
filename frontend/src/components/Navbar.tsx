@@ -19,12 +19,14 @@ export default function Navbar() {
                 <div className="hidden items-center gap-8 md:flex">
                     {loading ? null : currentUser ? (
                         <>
-                            <Link
-                                to="/explore"
-                                className="text-sm text-gray-600 hover:text-gray-900 transition"
-                            >
-                                Explore
-                            </Link>
+                            {!isOwner && (
+                                <Link
+                                    to="/explore"
+                                    className="text-sm text-gray-600 hover:text-gray-900 transition"
+                                >
+                                    Explore
+                                </Link>
+                            )}
                             <Link
                                 to="/home"
                                 className="text-sm text-gray-600 hover:text-gray-900 transition"
