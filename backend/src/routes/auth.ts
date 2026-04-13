@@ -2,8 +2,6 @@ import { Router, Request, Response } from "express";
 
 import { firebaseApp } from "@/initializeFirebase";
 import { getAuth } from "firebase-admin/auth";
-import { FirebaseAuthError } from "firebase-admin/auth";
-
 import { validationMethods, ValidationError } from "@/validation";
 import { authMiddleware, AuthenticatedRequest } from "@/middleware/auth";
 import { DataError } from "@/data/collections";
@@ -49,11 +47,6 @@ authRoutes.post(
                     return res
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
-                }
-                case e instanceof FirebaseAuthError: {
-                    return res
-                        .status(500)
-                        .json({ error: (e as FirebaseAuthError).message });
                 }
                 case true: {
                     return res.status(500).json({ error: e });
