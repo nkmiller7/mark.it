@@ -45,6 +45,11 @@ const jobDataMethods = {
         return jobs;
     },
 
+    getAllJobs: async (): Promise<JobDocument[]> => {
+        const jobsCol = await jobsCollection();
+        return jobsCol.find({}).toArray();
+    },
+
     getJobsByLabelerRating: async (rating: number): Promise<JobDocument[]> => {
         const validatedRating = validationMethods.user.rating(rating);
 

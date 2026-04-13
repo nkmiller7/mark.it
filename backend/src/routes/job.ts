@@ -27,15 +27,8 @@ jobRoutes.get(
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
             > = await userDataMethods.getUserByEmail(req.user.token.email);
-            if (userDataMethods.isLabelerUser(user)) {
-                const jobs = await jobDataMethods.getJobsByLabelerRating(
-                    user.rating,
-                );
-                return res.status(200).json(jobs);
-            } else if (userDataMethods.isReviewerUser(user)) {
-                const jobs = await jobDataMethods.getJobsByReviewerRating(
-                    user.rating,
-                );
+            if (userDataMethods.isLabelerUser(user) || userDataMethods.isReviewerUser(user)) {
+                const jobs = await jobDataMethods.getAllJobs();
                 return res.status(200).json(jobs);
             } else {
                 const jobs =
