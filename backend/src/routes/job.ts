@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, Request, Response } from "express";
 
 import { ObjectId, WithId } from "mongodb";
 
@@ -13,21 +13,25 @@ import {
 } from "@/data/users";
 import { jobDataMethods, JobDocument } from "@/data/jobs";
 import { taskDataMethods, TaskDocument } from "@/data/tasks";
-import { ownerDataMethods } from '@/data/owner';
-import mime from 'mime';
-import path from 'path';
+import { ownerDataMethods } from "@/data/owner";
+import mime from "mime";
+import path from "path";
 
 const jobRoutes = Router();
 
 jobRoutes.get(
     "/",
     authMiddleware.authenticateRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
-            > = await userDataMethods.getUserByEmail(req.user.token.email);
-            if (userDataMethods.isLabelerUser(user) || userDataMethods.isReviewerUser(user)) {
+            > = await userDataMethods.getUserByEmail(authReq.user.token.email!);
+            if (
+                userDataMethods.isLabelerUser(user) ||
+                userDataMethods.isReviewerUser(user)
+            ) {
                 const jobs = await jobDataMethods.getAllJobs();
                 return res.status(200).json(jobs);
             } else {
@@ -49,7 +53,7 @@ jobRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -57,9 +61,10 @@ jobRoutes.get(
     },
 );
 
-jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
+jobRoutes.get("/:id", async (req: Request, res: Response) => {
     try {
-        const jobId: ObjectId = validationMethods.common.id(req.params.id);
+        const authReq = req as AuthenticatedRequest;
+        const jobId: ObjectId = validationMethods.common.id(authReq.params.id);
         const job: JobDocument = await jobDataMethods.getJobById(
             jobId.toString(),
         );
@@ -76,7 +81,7 @@ jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
                     .status((e as DataError).code)
                     .json({ error: (e as DataError).message });
             }
-            case true: {
+            default: {
                 return res.status(500).json({ error: e });
             }
         }
@@ -86,15 +91,19 @@ jobRoutes.get("/:id", async (req: AuthenticatedRequest, res: Response) => {
 jobRoutes.get(
     "/:id/details",
     authMiddleware.authenticateOwnerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const jobId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+
+            const jobId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
 
             const job: JobDocument = await jobDataMethods.getJobById(
                 jobId.toString(),
             );
             const user = await userDataMethods.getUserByEmail(
-                req.user.token.email,
+                authReq.user.token.email!,
             );
             if (job.ownerId.toString() !== user._id.toString())
                 throw new ValidationError(403, "You do not own this job.");
@@ -115,7 +124,7 @@ jobRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -123,45 +132,44 @@ jobRoutes.get(
     },
 );
 
-jobRoutes.get(
-    "/:id/tasks",
-    async (req: AuthenticatedRequest, res: Response) => {
-        try {
-            const jobId: ObjectId = validationMethods.common.id(req.params.id);
-            const tasks = await taskDataMethods.getTaskByJobId(
-                jobId.toString(),
-            );
-            return res.status(200).json(tasks);
-        } catch (e) {
-            switch (true) {
-                case e instanceof ValidationError: {
-                    return res
-                        .status((e as ValidationError).code)
-                        .json({ error: (e as ValidationError).message });
-                }
-                case e instanceof DataError: {
-                    return res
-                        .status((e as DataError).code)
-                        .json({ error: (e as DataError).message });
-                }
-                case true: {
-                    return res.status(500).json({ error: e });
-                }
+jobRoutes.get("/:id/tasks", async (req: Request, res: Response) => {
+    try {
+        const authReq = req as AuthenticatedRequest;
+
+        const jobId: ObjectId = validationMethods.common.id(authReq.params.id);
+        const tasks = await taskDataMethods.getTaskByJobId(jobId.toString());
+        return res.status(200).json(tasks);
+    } catch (e) {
+        switch (true) {
+            case e instanceof ValidationError: {
+                return res
+                    .status((e as ValidationError).code)
+                    .json({ error: (e as ValidationError).message });
+            }
+            case e instanceof DataError: {
+                return res
+                    .status((e as DataError).code)
+                    .json({ error: (e as DataError).message });
+            }
+            default: {
+                return res.status(500).json({ error: e });
             }
         }
-    },
-);
+    }
+});
 
 jobRoutes.post(
     "/",
     authMiddleware.authenticateOwnerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
+
             const owner = await userDataMethods.getUserByEmail(
-                req.user.token.email,
+                authReq.user.token.email!,
             );
-            req.body.ownerId = owner._id.toString();
-            const job = validationMethods.request.job.create(req);
+            authReq.body.ownerId = owner._id.toString();
+            const job = validationMethods.request.job.create(authReq);
 
             const jobId: string = (
                 await jobDataMethods.createJob(job)
@@ -180,7 +188,7 @@ jobRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -191,21 +199,21 @@ jobRoutes.post(
 jobRoutes.post(
     "/:jobId/tasks",
     authMiddleware.authenticateOwnerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
+
             const jobId: ObjectId = validationMethods.common.id(
-                req.params.jobId,
+                authReq.params.jobId,
             );
             const job = await jobDataMethods.getJobById(jobId.toString());
-
             const user = await userDataMethods.getUserByEmail(
-                req.user.token.email,
+                authReq.user.token.email!,
             );
             if (job.ownerId.toString() !== user._id.toString())
                 throw new ValidationError(403, "You do not own this job.");
-
             const task: TaskDocument =
-                validationMethods.request.task.create(req);
+                validationMethods.request.task.create(authReq);
             task.jobId = jobId;
             const taskId = await taskDataMethods.createTask(task);
 
@@ -222,7 +230,7 @@ jobRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -233,24 +241,29 @@ jobRoutes.post(
 jobRoutes.post(
     "/:id/upload",
     authMiddleware.authenticateOwnerRequest,
-    async(req: AuthenticatedRequest, res:Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const filePaths = req.body.filePaths;
+            const authReq = req as AuthenticatedRequest;
+
+            const filePaths = authReq.body.filePaths;
             let files = [];
-            for(let file of filePaths){
+            for (let file of filePaths) {
                 let mimetype = mime.lookup(file);
-                if(mimetype !== "image/jpeg" && mimetype !== "image/png"){
-                    throw new DataError(400, "Image must be of type jpeg or png");
+                if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
+                    throw new DataError(
+                        400,
+                        "Image must be of type jpeg or png",
+                    );
                 }
                 files.push({
                     path: file,
                     mimetype: mimetype,
-                    filename: path.parse(file)
-                })
+                    filename: path.parse(file),
+                });
             }
             const result = await ownerDataMethods.uploadImages(files);
             return res.status(200).json(result);
-        }catch (e: unknown) {
+        } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
                     return res
@@ -262,23 +275,24 @@ jobRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
         }
-    }
+    },
 );
 
 jobRoutes.delete(
     "/:jobId",
     authMiddleware.authenticateOwnerRequest,
-    async(req: AuthenticatedRequest, res:Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const mongoId = validationMethods.common.id(req.params.jobId);
+            const authReq = req as AuthenticatedRequest;
+            const mongoId = validationMethods.common.id(authReq.params.jobId);
             await jobDataMethods.deleteJob(mongoId);
             return res.status(200).json("Successfully deleted job");
-        }catch (e: unknown) {
+        } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
                     return res
@@ -290,12 +304,12 @@ jobRoutes.delete(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
         }
-    }
-)
+    },
+);
 
 export { jobRoutes };

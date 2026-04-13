@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, Request, Response } from "express";
 import multer from "multer";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
@@ -43,10 +43,11 @@ const taskRoutes = Router();
 taskRoutes.get(
     "/mine",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
             const user = await userDataMethods.getUserByEmail(
-                req.user.token.email,
+                authReq.user.token.email!,
             );
             const tasks = await taskDataMethods.getTasksByUserId(
                 user._id.toString(),
@@ -64,7 +65,7 @@ taskRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -75,9 +76,12 @@ taskRoutes.get(
 taskRoutes.get(
     "/:id",
     authMiddleware.authenticateRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const taskId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
             const task = await taskDataMethods.getTaskById(taskId.toString());
             return res.status(200).json(task);
         } catch (e) {
@@ -92,7 +96,7 @@ taskRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -103,18 +107,28 @@ taskRoutes.get(
 taskRoutes.get(
     "/:id/assets",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const taskId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
             const task = await taskDataMethods.getTaskById(taskId.toString());
-            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            const user = await userDataMethods.getUserByEmail(
+                authReq.user.token.email!,
+            );
             const isAssigned =
                 task.assignedLabelerId?.toString() === user._id.toString() ||
                 task.assignedReviewerId?.toString() === user._id.toString();
             if (!isAssigned) {
-                throw new ValidationError(403, "You are not assigned to this task.");
+                throw new ValidationError(
+                    403,
+                    "You are not assigned to this task.",
+                );
             }
-            const assets = await assetDataMethods.getAssetsByTask(taskId.toString());
+            const assets = await assetDataMethods.getAssetsByTask(
+                taskId.toString(),
+            );
             return res.status(200).json(assets);
         } catch (e) {
             switch (true) {
@@ -128,7 +142,7 @@ taskRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -139,10 +153,11 @@ taskRoutes.get(
 taskRoutes.post(
     "/",
     authMiddleware.authenticateOwnerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
             const task: TaskDocument =
-                validationMethods.request.task.create(req);
+                validationMethods.request.task.create(authReq);
             const taskId: string = (
                 await taskDataMethods.createTask(task)
             ).toString();
@@ -159,7 +174,7 @@ taskRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -170,26 +185,27 @@ taskRoutes.post(
     "/:id/assets",
     authMiddleware.authenticateOwnerRequest,
     upload.single("file"),
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const taskId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const taskId = validationMethods.common.id(authReq.params.id);
 
-            if (!req.file) {
+            if (!authReq.file) {
                 return res
                     .status(400)
                     .json({ error: "No image file provided." });
             }
 
             const task = await taskDataMethods.getTaskById(taskId.toString());
-            const ext = path.extname(req.file.originalname) || ".jpg";
+            const ext = path.extname(authReq.file.originalname) || ".jpg";
             const s3Key = `${task.jobId.toString()}/${taskId.toString()}/${randomUUID()}${ext}`;
 
             await s3.send(
                 new PutObjectCommand({
                     Bucket: process.env.S3_BUCKET_NAME,
                     Key: s3Key,
-                    Body: req.file.buffer,
-                    ContentType: req.file.mimetype,
+                    Body: authReq.file.buffer,
+                    ContentType: authReq.file.mimetype,
                 }),
             );
 
@@ -223,12 +239,15 @@ taskRoutes.post(
 taskRoutes.patch(
     "/:id/claim",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const taskId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const taskId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
-            > = await userDataMethods.getUserByEmail(req.user.token.email);
+            > = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             if (user.type === "owner")
                 throw new ValidationError(
                     403,
@@ -254,7 +273,7 @@ taskRoutes.patch(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -265,15 +284,26 @@ taskRoutes.patch(
 taskRoutes.patch(
     "/:id/unclaim",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const taskId: ObjectId = validationMethods.common.id(req.params.id);
-            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            const authReq = req as AuthenticatedRequest;
+            const taskId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
+            const user = await userDataMethods.getUserByEmail(
+                authReq.user.token.email!,
+            );
             if (user.type === "owner") {
                 throw new ValidationError(403, "Owners cannot unclaim tasks.");
             }
-            await taskDataMethods.unclaimTask(taskId.toString(), user._id.toString(), user.type);
-            return res.status(200).json({ message: "Task successfully unclaimed." });
+            await taskDataMethods.unclaimTask(
+                taskId.toString(),
+                user._id.toString(),
+                user.type,
+            );
+            return res
+                .status(200)
+                .json({ message: "Task successfully unclaimed." });
         } catch (e) {
             switch (true) {
                 case e instanceof ValidationError: {
@@ -286,7 +316,7 @@ taskRoutes.patch(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -297,12 +327,13 @@ taskRoutes.patch(
 taskRoutes.delete(
     "/:taskId",
     authMiddleware.authenticateOwnerRequest,
-    async(req: AuthenticatedRequest, res:Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const mongoId = validationMethods.common.id(req.params.taskId);
+            const authReq = req as AuthenticatedRequest;
+            const mongoId = validationMethods.common.id(authReq.params.taskId);
             await taskDataMethods.deleteTask(String(mongoId));
             return res.status(200).json("Successfully deleted task");
-        }catch (e: unknown) {
+        } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {
                     return res
@@ -314,12 +345,12 @@ taskRoutes.delete(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
         }
-    }
-)
+    },
+);
 
 export { taskRoutes };

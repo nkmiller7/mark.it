@@ -25,7 +25,7 @@ const userDataMethods = {
     doesEmailExist: async (arg: unknown): Promise<boolean> => {
         const email = validationMethods.user.email(arg);
         const usersCol = await usersCollection<UserDocument>();
-        const user: WithId<UserDocument> = await usersCol.findOne({
+        const user: WithId<UserDocument> | null = await usersCol.findOne({
             email: { $regex: email, $options: "i" },
         });
         return user !== null;
@@ -93,6 +93,10 @@ const userDataMethods = {
                 if (insertInfo.acknowledged !== true)
                     throw new DataError(500, "Failed to create new user.");
                 return insertInfo.insertedId;
+            }
+
+            default: {
+                throw new DataError(400, "Invalid user type.");
             }
         }
     },
