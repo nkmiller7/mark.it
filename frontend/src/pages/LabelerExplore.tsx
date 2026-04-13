@@ -25,6 +25,7 @@ export default function LabelerExplore() {
     const [error, setError] = useState("");
     const [expandedJob, setExpandedJob] = useState<string | null>(null);
     const [tasks, setTasks] = useState<Record<string, Task[]>>({});
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         const fetchJobs = async () => {
@@ -164,14 +165,25 @@ export default function LabelerExplore() {
 
     return (
         <div className="mx-auto max-w-4xl px-6 py-12">
-            <h1 className="mb-8 text-3xl font-bold text-gray-900">
-                Labeler - Explore Jobs
-            </h1>
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">
+                    Labeler - Explore Jobs
+                </h1>
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-sm text-gray-600">Show All Jobs</span>
+                    <div
+                        onClick={() => setShowAll((prev) => !prev)}
+                        className={`relative w-10 h-6 rounded-full transition ${showAll ? "bg-blue-600" : "bg-gray-300"}`}
+                    >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${showAll ? "left-5" : "left-1"}`} />
+                    </div>
+                </label>
+            </div>
             {jobs.length === 0 ? (
                 <p className="text-gray-500">No jobs available.</p>
             ) : (
                 <div className="grid gap-4">
-                    {jobs.map((job) => {
+                    {jobs.filter((job) => showAll || (userData?.rating ?? 0) >= job.ratingRequired.labeler).map((job) => {
                         const meetsRating = (userData?.rating ?? 0) >= job.ratingRequired.labeler;
                         return (
                         <div
