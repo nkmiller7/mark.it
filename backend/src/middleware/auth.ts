@@ -37,6 +37,16 @@ const authMiddleware = {
             (req as AuthenticatedRequest).user = {
                 token: await firebaseAuth.verifyIdToken(idToken),
             };
+            if (
+                typeof (req as AuthenticatedRequest).user.token.email !==
+                "string"
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        error: "No email associated with user on Firebase.",
+                    });
+            }
             return next();
         } catch (e) {
             return res.status(401).json({ error: "Unauthorized request." });
@@ -59,9 +69,19 @@ const authMiddleware = {
                 token: await firebaseAuth.verifyIdToken(idToken),
             };
             if (
+                typeof (req as AuthenticatedRequest).user.token.email !==
+                "string"
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        error: "No email associated with user on Firebase.",
+                    });
+            }
+            if (
                 !(await userDataMethods.isOwnerUser(
                     await userDataMethods.getUserByEmail(
-                        (req as AuthenticatedRequest).user.token.email,
+                        (req as AuthenticatedRequest).user.token.email!,
                     ),
                 ))
             ) {
@@ -89,9 +109,19 @@ const authMiddleware = {
                 token: await firebaseAuth.verifyIdToken(idToken),
             };
             if (
+                typeof (req as AuthenticatedRequest).user.token.email !==
+                "string"
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        error: "No email associated with user on Firebase.",
+                    });
+            }
+            if (
                 !(await userDataMethods.isLabelerUser(
                     await userDataMethods.getUserByEmail(
-                        (req as AuthenticatedRequest).user.token.email,
+                        (req as AuthenticatedRequest).user.token.email!,
                     ),
                 ))
             ) {
@@ -119,9 +149,19 @@ const authMiddleware = {
                 token: await firebaseAuth.verifyIdToken(idToken),
             };
             if (
+                typeof (req as AuthenticatedRequest).user.token.email !==
+                "string"
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        error: "No email associated with user on Firebase.",
+                    });
+            }
+            if (
                 !(await userDataMethods.isReviewerUser(
                     await userDataMethods.getUserByEmail(
-                        (req as AuthenticatedRequest).user.token.email,
+                        (req as AuthenticatedRequest).user.token.email!,
                     ),
                 ))
             ) {
@@ -148,10 +188,20 @@ const authMiddleware = {
             (req as AuthenticatedRequest).user = {
                 token: await firebaseAuth.verifyIdToken(idToken),
             };
+            if (
+                typeof (req as AuthenticatedRequest).user.token.email !==
+                "string"
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        error: "No email associated with user on Firebase.",
+                    });
+            }
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
             > = await userDataMethods.getUserByEmail(
-                (req as AuthenticatedRequest).user.token.email,
+                (req as AuthenticatedRequest).user.token.email!,
             );
             if (
                 !(await userDataMethods.isLabelerUser(user)) &&

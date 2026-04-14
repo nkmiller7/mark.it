@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, Request, Response } from "express";
 
 import { validationMethods, ValidationError } from "@/validation";
 import { authMiddleware, AuthenticatedRequest } from "@/middleware/auth";
@@ -10,15 +10,15 @@ const userRoutes = Router();
 userRoutes.get(
     "/",
     authMiddleware.authenticateRequest,
-    async (
-        req: AuthenticatedRequest,
-        res: Response,
-    ): Promise<Response<any, Record<string, any>>> => {
+    async (req: Request, res: Response) => {
         try {
+            const authReq = req as AuthenticatedRequest;
             return res
                 .status(200)
                 .json(
-                    await userDataMethods.getUserByEmail(req.user.token.email),
+                    await userDataMethods.getUserByEmail(
+                        authReq.user.token.email!,
+                    ),
                 );
         } catch (e: unknown) {
             switch (true) {
@@ -32,7 +32,7 @@ userRoutes.get(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }

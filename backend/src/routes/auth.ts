@@ -21,7 +21,7 @@ authRoutes.post(
     async (
         req: Request,
         res: Response,
-    ): Promise<Response<any, Record<string, any>>> => {
+    ) => {
         try {
             const user:
                 | OwnerUserDocument
@@ -48,7 +48,7 @@ authRoutes.post(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -60,9 +60,9 @@ authRoutes.get(
     "/check",
     authMiddleware.authenticateRequest,
     async (
-        req: AuthenticatedRequest,
+        req: Request,
         res: Response,
-    ): Promise<Response<any, Record<string, any>>> => {
+    ) => {
         return res.status(200).json({ message: "Authenticated." });
     },
 );
