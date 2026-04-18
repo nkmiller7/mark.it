@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ThemeToggle from '../components/ThemeToggle';
 
 interface UserData {
     email: string;
@@ -15,7 +16,7 @@ export default function Settings() {
     const { currentUser, signOut } = useAuth();
     const [userData, setUserData] = useState<UserData | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [darkMode, setDarkMode] = useState(false);
+    //const [darkMode, setDarkMode] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     useEffect(() => {
@@ -117,16 +118,11 @@ export default function Settings() {
                 </Link>
                 <div className="flex items-center justify-between rounded-lg border border-gray-300 px-4 py-2">
                     <div className="text-sm font-medium text-gray-700">
-                        Dark Mode (Not Yet Implemented)
+                        Dark Mode
                     </div>
-                    <button
-                        onClick={() => setDarkMode(!darkMode)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${darkMode ? "bg-blue-600" : "bg-gray-300"}`}
-                    >
-                        <div
-                            className={`h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${darkMode ? "translate-x-4" : "translate-x-1"}`}
-                        />
-                    </button>
+                    <div>
+                        <ThemeToggle />
+                    </div>
                 </div>
                 {!confirmDelete ? (
                     <button

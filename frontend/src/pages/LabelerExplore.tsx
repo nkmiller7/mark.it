@@ -175,7 +175,7 @@ export default function LabelerExplore() {
                         onClick={() => setShowAll((prev) => !prev)}
                         className={`relative w-10 h-6 rounded-full transition ${showAll ? "bg-blue-600" : "bg-gray-300"}`}
                     >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${showAll ? "left-5" : "left-1"}`} />
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white dark: bg-gray-900 shadow transition-all ${showAll ? "left-5" : "left-1"}`} />
                     </div>
                 </label>
             </div>
@@ -205,24 +205,24 @@ export default function LabelerExplore() {
                                     )}
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
+                                    <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                         Due {new Date(job.deadlineDate).toLocaleDateString()}
                                     </span>
-                                    <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
+                                    <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                         Rating {job.ratingRequired.labeler}+
                                     </span>
                                     {meetsRating && tasks[job._id]?.length > 0 && (
                                         <>
-                                            <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
+                                            <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                                 {tasks[job._id].filter((t) => t.status === "labeled" || t.status === "reviewed").length} / {tasks[job._id].length} completed
                                             </span>
-                                            <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-600">
+                                            <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-600">
                                                 {tasks[job._id].filter((t) => t.status === "unlabeled").length} unlabeled
                                             </span>
                                         </>
                                     )}
                                     {!meetsRating && (
-                                        <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-400">
+                                        <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-400">
                                             Your rating does not meet the minimum required rating for this job
                                         </span>
                                     )}
@@ -238,7 +238,7 @@ export default function LabelerExplore() {
                                         tasks[job._id]?.map((task, index) => (
                                             <div
                                                 key={task._id}
-                                                className="rounded-lg border border-gray-200 bg-white overflow-hidden flex items-stretch"
+                                                className="rounded-lg border border-gray-200 bg-white dark: bg-gray-900 overflow-hidden flex items-stretch"
                                             >
                                                 <div className="w-1 shrink-0 bg-blue-400" />
                                                 <div className="flex items-center justify-between gap-4 p-4 flex-1 min-w-0">

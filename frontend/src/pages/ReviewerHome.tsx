@@ -16,7 +16,7 @@ export default function ReviewerHome({
     const { signOut } = useAuth();
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-white dark: bg-gray-900 px-4">
             <h1 className="text-3xl font-bold text-gray-900">
                 Reviewer Dashboard
             </h1>

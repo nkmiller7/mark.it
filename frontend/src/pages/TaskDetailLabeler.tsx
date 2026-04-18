@@ -218,7 +218,7 @@ export default function TaskDetailLabeler() {
                                 key={option}
                                 onClick={() => !confirmed && setSelected(option)}
                                 disabled={confirmed}
-                                className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition ${selected === option ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700"} ${!confirmed ? "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 cursor-pointer" : "cursor-not-allowed text-gray-400"}`}
+                                className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition ${selected === option ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white dark: bg-gray-900 text-gray-700"} ${!confirmed ? "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 cursor-pointer" : "cursor-not-allowed text-gray-400"}`}
                             >
                                 {option}
                             </button>
