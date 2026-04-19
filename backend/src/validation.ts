@@ -429,7 +429,8 @@ const validationMethods = {
                     ),
                     schema: validationMethods.task.schema(body.schema),
                     assignedLabelerId: null,
-                    assignedReviewerId: null,
+                    assignedReviewerIds: [],
+                    completedReviewerIds: [],
                     status: "unlabeled",
                 };
                 jobDataMethods.getJobById(task.jobId.toString()).catch((e) => {

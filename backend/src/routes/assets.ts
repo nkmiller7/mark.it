@@ -39,7 +39,7 @@ assetRoutes.get("/:id/url",
             const user = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             const isAssigned =
                 task.assignedLabelerId?.toString() === user._id.toString() ||
-                task.assignedReviewerId?.toString() === user._id.toString();
+                (task.assignedReviewerIds ?? []).some((id) => id.toString() === user._id.toString());
             if (!isAssigned) {
                 throw new ValidationError(403, "You are not assigned to this task.");
             }

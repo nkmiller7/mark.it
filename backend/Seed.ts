@@ -127,7 +127,7 @@ const arc1_t1 = await taskDataMethods.createTask({
     jobId: arc_job1Id,
     description: "Classify this 5-minute SPY candlestick cluster observed during market open.",
     schema: ["Breakout", "Reversal", "Consolidation"],
-    assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+    assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
 });
 await seedAssetsForTask(arc1_t1, imgs("arc1_t1", 5));
 
@@ -135,7 +135,7 @@ const arc1_t2 = await taskDataMethods.createTask({
     jobId: arc_job1Id,
     description: "Classify this 15-minute ES futures candlestick pattern near a key resistance level.",
     schema: ["Breakout", "Reversal", "Consolidation"],
-    assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+    assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
 });
 await seedAssetsForTask(arc1_t2, imgs("arc1_t2", 5));
 
@@ -143,7 +143,7 @@ const arc1_t3 = await taskDataMethods.createTask({
     jobId: arc_job1Id,
     description: "Classify this hourly SPX candlestick sequence observed following a CPI release.",
     schema: ["Breakout", "Reversal", "Consolidation"],
-    assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+    assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
 });
 await seedAssetsForTask(arc1_t3, imgs("arc1_t3", 5));
 
@@ -165,7 +165,7 @@ for (let t = 1; t <= 4; t++) {
         jobId: arc_job2Id,
         description: descriptions[t - 1],
         schema: ["Bullish", "Bearish", "Neutral"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`arc2_t${t}`, 5));
 }
@@ -189,7 +189,7 @@ for (let t = 1; t <= 5; t++) {
         jobId: arc_job3Id,
         description: arc3Descriptions[t - 1],
         schema: ["Deep Liquidity", "Thin Liquidity", "Imbalanced", "Crossed Market"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`arc3_t${t}`, 5));
 }
@@ -213,7 +213,7 @@ for (let t = 1; t <= 3; t++) {
         jobId: mqg_job1Id,
         description: mqg1Descriptions[t - 1],
         schema: ["Strongly Hawkish", "Mildly Hawkish", "Neutral", "Mildly Dovish", "Strongly Dovish"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`mqg1_t${t}`, 5));
 }
@@ -236,7 +236,7 @@ for (let t = 1; t <= 4; t++) {
         jobId: mqg_job2Id,
         description: mqg2Descriptions[t - 1],
         schema: ["Trend", "Range-Bound", "Volatility Spike"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`mqg2_t${t}`, 5));
 }
@@ -258,7 +258,7 @@ for (let t = 1; t <= 3; t++) {
         jobId: mqg_job3Id,
         description: mqg3Descriptions[t - 1],
         schema: ["Buy", "Hold", "Sell", "Neutral"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`mqg3_t${t}`, 5));
 }
@@ -280,7 +280,7 @@ for (let t = 1; t <= 3; t++) {
         jobId: mqg_job4Id,
         description: mqg4Descriptions[t - 1],
         schema: ["Rate Decision", "Inflation Print", "Employment Data", "Geopolitical Event", "Earnings Shock", "Liquidity Crisis", "Unexplained"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`mqg4_t${t}`, 5));
 }
@@ -305,7 +305,7 @@ for (let t = 1; t <= 4; t++) {
         jobId: ilr_job1Id,
         description: ilr1Descriptions[t - 1],
         schema: ["Exchange Inflow", "Exchange Outflow", "Wallet Consolidation"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`ilr1_t${t}`, 5));
 }
@@ -327,7 +327,7 @@ for (let t = 1; t <= 3; t++) {
         jobId: ilr_job2Id,
         description: ilr2Descriptions[t - 1],
         schema: ["High Impact", "Medium Impact", "Low Impact", "Negligible Impact"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`ilr2_t${t}`, 5));
 }
@@ -350,7 +350,7 @@ for (let t = 1; t <= 4; t++) {
         jobId: ilr_job3Id,
         description: ilr3Descriptions[t - 1],
         schema: ["Contango", "Backwardation", "Flat"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`ilr3_t${t}`, 5));
 }
@@ -374,7 +374,7 @@ for (let t = 1; t <= 5; t++) {
         jobId: ilr_job4Id,
         description: ilr4Descriptions[t - 1],
         schema: ["Market Risk", "Credit Risk", "Liquidity Risk", "Operational Risk"],
-        assignedLabelerId: null, assignedReviewerId: null, status: "unlabeled",
+        assignedLabelerId: null, assignedReviewerIds: [], completedReviewerIds: [], status: "unlabeled",
     });
     await seedAssetsForTask(taskId, imgs(`ilr4_t${t}`, 5));
 }
