@@ -4,10 +4,13 @@ import {
     jobsCollection,
     tasksCollection,
     usersCollection,
+    assetsCollection,
 } from "@/data/collections";
 import { UserDocument } from "@/data/users";
-import { taskDataMethods } from '@/data/tasks';
+import { taskDataMethods } from "@/data/tasks";
 import { validationMethods } from "@/validation";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import JSZip from "jszip";
 
 interface JobDocument {
     ownerId: ObjectId;
@@ -24,7 +27,7 @@ const jobDataMethods = {
         const mongoId = validationMethods.common.id(id);
 
         const jobsCol = await jobsCollection();
-        const job: JobDocument|null = await jobsCol.findOne({
+        const job: JobDocument | null = await jobsCol.findOne({
             _id: mongoId,
         });
         if (job === null) throw new DataError(404, "Job not found.");
@@ -261,22 +264,90 @@ const jobDataMethods = {
             contributors: { labelers, reviewers },
         };
     },
-    deleteJob: async (
-        id: ObjectId
-    ) => {
+    getLabeledJobAssets: async (jobId: string) => {
+        const mongoJobId = validationMethods.common.id(jobId);
+
+        const tasksCol = await tasksCollection();
+        const tasks = await tasksCol
+            .find({
+                jobId: new ObjectId(mongoJobId),
+            })
+            .toArray();
+
+        const assetsCol = await assetsCollection();
+        const labeledAssets = [];
+        for (let task of tasks) {
+            const taskAssets = await assetsCol
+                .find({
+                    taskId: task._id,
+                    status: { $in: ["REVIEWED"] },
+                })
+                .toArray();
+            labeledAssets.push(...taskAssets);
+        }
+
+        if (process.env.MODE === "prod") {
+            const s3 = new S3Client({
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+                },
+                region: process.env.AWS_REGION,
+            });
+            const zip = new JSZip();
+
+            for (let asset of labeledAssets) {
+                const assetS3Key = asset.key;
+                const command = new GetObjectCommand({
+                    Bucket: process.env.S3_BUCKET_NAME,
+                    Key: assetS3Key,
+                });
+
+                let fileBytes: Uint8Array = new Uint8Array();
+                try {
+                    const response = await s3.send(command);
+                    if (!response.Body)
+                        throw new DataError(
+                            500,
+                            "Failed to retrieve asset from S3",
+                        );
+                    fileBytes = await response.Body.transformToByteArray();
+                } catch (e) {
+                    throw new DataError(
+                        500,
+                        "Failed to retrieve asset from S3",
+                    );
+                }
+                zip.file(
+                    `${asset.label}_${asset.taskId.toString()}_${asset._id.toString()}`,
+                    fileBytes,
+                );
+            }
+            const content = await zip.generateAsync({
+                type: "nodebuffer",
+                compression: "DEFLATE",
+                compressionOptions: { level: 6 },
+            });
+            return content;
+        }
+
+        // TODO: Implement local file retrieval for non-prod environments.
+        throw new DataError(500, "Failed to retrieve labeled assets.");
+    },
+    deleteJob: async (id: ObjectId) => {
         const mongoId = validationMethods.common.id(id);
         const jobsCol = await jobsCollection();
         const tasksCol = await tasksCollection();
-        const job: JobDocument|null = await jobsCol.findOne({
+        const job: JobDocument | null = await jobsCol.findOne({
             _id: mongoId,
         });
-        if (job === null) throw new DataError(404, "Job not found."); 
-        const jobTasks = await tasksCol.find({jobId: mongoId}).toArray();
-        for(let task of jobTasks){
+        if (job === null) throw new DataError(404, "Job not found.");
+        const jobTasks = await tasksCol.find({ jobId: mongoId }).toArray();
+        for (let task of jobTasks) {
             await taskDataMethods.deleteTask(String(task._id));
         }
         await jobsCol.deleteOne(mongoId);
-    }
+    },
 };
 
 export { JobDocument, jobDataMethods };

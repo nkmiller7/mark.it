@@ -132,31 +132,86 @@ jobRoutes.get(
     },
 );
 
-jobRoutes.get("/:id/tasks", async (req: Request, res: Response) => {
-    try {
-        const authReq = req as AuthenticatedRequest;
+jobRoutes.get(
+    "/:id/tasks",
+    authMiddleware.authenticateRequest,
+    async (req: Request, res: Response) => {
+        try {
+            const authReq = req as AuthenticatedRequest;
 
-        const jobId: ObjectId = validationMethods.common.id(authReq.params.id);
-        const tasks = await taskDataMethods.getTaskByJobId(jobId.toString());
-        return res.status(200).json(tasks);
-    } catch (e) {
-        switch (true) {
-            case e instanceof ValidationError: {
-                return res
-                    .status((e as ValidationError).code)
-                    .json({ error: (e as ValidationError).message });
-            }
-            case e instanceof DataError: {
-                return res
-                    .status((e as DataError).code)
-                    .json({ error: (e as DataError).message });
-            }
-            default: {
-                return res.status(500).json({ error: e });
+            const jobId: ObjectId = validationMethods.common.id(
+                authReq.params.id,
+            );
+            const tasks = await taskDataMethods.getTaskByJobId(
+                jobId.toString(),
+            );
+            return res.status(200).json(tasks);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                default: {
+                    return res.status(500).json({ error: e });
+                }
             }
         }
-    }
-});
+    },
+);
+
+jobRoutes.get(
+    "/:id/assets",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: Request, res: Response) => {
+        try {
+            const authReq = req as AuthenticatedRequest;
+
+            const jobId: ObjectId = validationMethods.common.id(
+                authReq.params.jobId,
+            );
+            const job = await jobDataMethods.getJobById(jobId.toString());
+            const user = await userDataMethods.getUserByEmail(
+                authReq.user.token.email!,
+            );
+            if (job.ownerId.toString() !== user._id.toString())
+                throw new ValidationError(403, "You do not own this job.");
+
+            const labeledAssets = await jobDataMethods.getLabeledJobAssets(
+                jobId.toString(),
+            );
+            res.set({
+                "Content-Type": "application/zip",
+                "Content-Disposition":
+                    'attachment; filename="labeled_assets.zip"',
+                "Content-Length": labeledAssets.length,
+            });
+            return res.send(labeledAssets);
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                default: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
 
 jobRoutes.post(
     "/",
