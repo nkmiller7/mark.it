@@ -280,7 +280,8 @@ const jobDataMethods = {
             const taskAssets = await assetsCol
                 .find({
                     taskId: task._id,
-                    status: { $in: ["REVIEWED"] },
+                    status: { $in: ["LABELED"] },
+                    //statues: { $in: ["LABELED", "REVIEWED"] },
                 })
                 .toArray();
             labeledAssets.push(...taskAssets);

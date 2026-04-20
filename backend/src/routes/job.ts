@@ -174,7 +174,7 @@ jobRoutes.get(
             const authReq = req as AuthenticatedRequest;
 
             const jobId: ObjectId = validationMethods.common.id(
-                authReq.params.jobId,
+                authReq.params.id,
             );
             const job = await jobDataMethods.getJobById(jobId.toString());
             const user = await userDataMethods.getUserByEmail(

@@ -62,6 +62,8 @@ export default function JobDetail() {
     const [data, setData] = useState<JobDetailData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
+    const [downloading, setDownloading] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -113,6 +115,43 @@ export default function JobDetail() {
     const reviewedCount = tasks.filter((t) => t.status === "reviewed").length;
     const pct =
         tasks.length > 0 ? Math.round((reviewedCount / tasks.length) * 100) : 0;
+
+    const handleDownload = async () => {
+        try {
+            setDownloading(true);
+            setShowDownloadConfirm(false);
+            const token = await currentUser?.getIdToken();
+            const res = await fetch(`/api/job/${id}/assets`, {
+                headers: { authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setError(body?.error || "Failed to download labeled data.");
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "labeled_assets.zip";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch {
+            setError("Failed to download labeled data.");
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const onDownloadClick = () => {
+        if (pct === 100) {
+            handleDownload();
+        } else {
+            setShowDownloadConfirm(true);
+        }
+    };
 
     return (
         <div className="mx-auto max-w-5xl px-6 py-10">
@@ -188,7 +227,88 @@ export default function JobDetail() {
                         </div>
                     </div>
                 </div>
+
+                <div className="mt-5">
+                    <button
+                        onClick={onDownloadClick}
+                        disabled={downloading}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {downloading ? (
+                            <svg
+                                className="size-4 animate-spin"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                            </svg>
+                        ) : (
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                                stroke="currentColor"
+                                className="size-4"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                                />
+                            </svg>
+                        )}
+                        {downloading ? "Downloading…" : "Download Labeled Data"}
+                    </button>
+                </div>
             </Card>
+
+            {/* Download confirmation modal */}
+            {showDownloadConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <Card className="mx-4 max-w-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Incomplete Dataset
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-600">
+                            The dataset has not finished being labeled and
+                            reviewed.{" "}
+                            <span className="font-medium text-gray-900">
+                                {reviewedCount} of {tasks.length}
+                            </span>{" "}
+                            tasks have been reviewed. Only labeled assets will
+                            be included in the download.
+                        </p>
+                        <div className="mt-5 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowDownloadConfirm(false)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDownload}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                            >
+                                Download Anyway
+                            </button>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {/* Contributors */}
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
