@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, Request, Response } from "express";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -30,12 +30,13 @@ const assetRoutes = Router();
 
 assetRoutes.get("/:id/url",
     authMiddleware.authenticateLabelerOrReviewerRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const assetId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const assetId: ObjectId = validationMethods.common.id(authReq.params.id);
             const asset = await assetDataMethods.getAssetById(assetId.toString());
             const task = await taskDataMethods.getTaskById(String(asset.taskId));
-            const user = await userDataMethods.getUserByEmail(req.user.token.email);
+            const user = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             const isAssigned =
                 task.assignedLabelerId?.toString() === user._id.toString() ||
                 task.assignedReviewerId?.toString() === user._id.toString();
@@ -60,7 +61,7 @@ assetRoutes.get("/:id/url",
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -70,9 +71,10 @@ assetRoutes.get("/:id/url",
 
 assetRoutes.get("/:id",
     authMiddleware.authenticateRequest,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         try {
-            const assetId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const assetId: ObjectId = validationMethods.common.id(authReq.params.id);
             const asset = await assetDataMethods.getAssetById(assetId.toString());
             return res.status(200).json(asset);
         } catch (e) {
@@ -87,7 +89,7 @@ assetRoutes.get("/:id",
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -97,14 +99,16 @@ assetRoutes.get("/:id",
 
 assetRoutes.patch("/:id/label",
     authMiddleware.authenticateLabelerRequest,
-    async(req: AuthenticatedRequest, res: Response) => {
+    async(req: Request, res: Response) => {
         try {
-            const assetId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+
+            const assetId: ObjectId = validationMethods.common.id(authReq.params.id);
             const asset = await assetDataMethods.getAssetById(String(assetId));
             const task = await taskDataMethods.getTaskById(String(asset.taskId));
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
-            > = await userDataMethods.getUserByEmail(req.user.token.email);
+            > = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             if (user.type !== "labeler")
                 throw new ValidationError(
                     403,
@@ -133,7 +137,7 @@ assetRoutes.patch("/:id/label",
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -143,14 +147,15 @@ assetRoutes.patch("/:id/label",
 
 assetRoutes.patch("/:id/review",
     authMiddleware.authenticateReviewerRequest,
-    async(req: AuthenticatedRequest, res: Response) => {
+    async(req: Request, res: Response) => {
         try {
-            const assetId: ObjectId = validationMethods.common.id(req.params.id);
+            const authReq = req as AuthenticatedRequest;
+            const assetId: ObjectId = validationMethods.common.id(authReq.params.id);
             const asset = await assetDataMethods.getAssetById(String(assetId));
             const task = await taskDataMethods.getTaskById(String(asset.taskId));
             const user: WithId<
                 OwnerUserDocument | LabelerUserDocument | ReviewerUserDocument
-            > = await userDataMethods.getUserByEmail(req.user.token.email);
+            > = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             if (user.type !== "reviewer")
                 throw new ValidationError(
                     403,
@@ -172,7 +177,7 @@ assetRoutes.patch("/:id/review",
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
@@ -183,9 +188,10 @@ assetRoutes.patch("/:id/review",
 assetRoutes.delete(
     "/:assetId",
     authMiddleware.authenticateOwnerRequest,
-    async(req: AuthenticatedRequest, res:Response) => {
+    async(req: Request, res:Response) => {
         try {
-            const mongoId = validationMethods.common.id(req.params.assetId);
+            const authReq = req as AuthenticatedRequest;
+            const mongoId = validationMethods.common.id(authReq.params.assetId);
             await assetDataMethods.deleteAsset(mongoId);
             return res.status(200).json("Successfully deleted asset");
         }catch (e: unknown) {
@@ -200,7 +206,7 @@ assetRoutes.delete(
                         .status((e as DataError).code)
                         .json({ error: (e as DataError).message });
                 }
-                case true: {
+                default: {
                     return res.status(500).json({ error: e });
                 }
             }
