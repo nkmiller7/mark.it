@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 interface Task {
@@ -13,6 +14,7 @@ interface Task {
 
 export default function ReviewerHome() {
     const { currentUser, userData } = useAuth();
+    const navigate = useNavigate();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -105,9 +107,14 @@ export default function ReviewerHome() {
                                             <div className="font-semibold text-gray-900 truncate">{task.description}</div>
                                             <div className="text-xs text-gray-500">{task.jobDescription}</div>
                                             <div className="text-xs text-gray-400">Due {new Date(task.jobDeadline).toLocaleDateString()}</div>
+                                            <div className="text-xs text-gray-400">{(task.assignedReviewerIds ?? []).length} / 3 reviewers claimed</div>
+                                            <div className="text-xs text-gray-400">{(task.completedReviewerIds ?? []).length} / 3 reviewers submitted</div>
                                         </div>
                                         <div className="flex flex-col gap-2 shrink-0">
-                                            <button className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition">
+                                            <button
+                                                onClick={() => navigate(`/tasks/review/${task._id}`)}
+                                                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition"
+                                            >
                                                 Review Task
                                             </button>
                                             <button

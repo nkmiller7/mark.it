@@ -304,9 +304,14 @@ export default function ReviewerExplore() {
                                                                 {task.status}
                                                             </div>
                                                             {task.status === "labeled" && (
-                                                                <div className="text-xs text-gray-500">
-                                                                    {(task.assignedReviewerIds ?? []).length} / 3 reviewers claimed
-                                                                </div>
+                                                                <>
+                                                                    <div className="text-xs text-gray-500">
+                                                                        {(task.assignedReviewerIds ?? []).length} / 3 reviewers claimed
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500">
+                                                                        {(task.completedReviewerIds ?? []).length} / 3 submitted
+                                                                    </div>
+                                                                </>
                                                             )}
                                                         </div>
                                                         {getTaskButton(task, job._id)}
