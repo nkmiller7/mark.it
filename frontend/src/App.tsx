@@ -16,6 +16,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import TaskDetailLabeler from "./pages/TaskDetailLabeler";
+import TaskDetailReviewer from "./pages/TaskDetailReviewer";
 
 function ScrollToHash() {
     const { pathname, hash } = useLocation();
@@ -48,6 +49,7 @@ function App() {
                         <Route path="/jobs/create" element={<CreateJob />} />
                         <Route path="/jobs/:id" element={<JobDetail />} />
                         <Route path="/tasks/label/:id" element={<TaskDetailLabeler />} />
+                        <Route path="/tasks/review/:id" element={<TaskDetailReviewer />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/settings/change-password" element={<ChangePassword />} />
                         <Route path="/explore" element = {<Explore />} />

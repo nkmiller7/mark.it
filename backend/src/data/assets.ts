@@ -1,7 +1,7 @@
 import { validationMethods } from "@/validation";
 import { assetsCollection, tasksCollection, usersCollection, DataError } from "@/data/collections";
-import { ObjectId } from "mongodb";
 import { TaskDocument } from "./tasks";
+import { ObjectId } from "mongodb";
 import { ownerDataMethods } from "./owner";
 
 interface AssetDocument{
@@ -9,10 +9,9 @@ interface AssetDocument{
     key: string;
     source: "s3" | "local";
     label: string | null;
-    reviewed_label: string | null;
-    status: "UNLABELED" | "LABELED" | "REVIEWED";
     labeled_by: ObjectId | null;
-    reviewed_by: ObjectId | null;
+    reviews: { reviewerId: ObjectId, label: string }[];
+    status: "UNLABELED" | "LABELED" | "REVIEWED";
 }
 
 const assetDataMethods = {
@@ -36,20 +35,14 @@ const assetDataMethods = {
         taskId = validationMethods.common.id(taskId);
         source = validationMethods.asset.source(source);
         key = validationMethods.asset.key(key);
-        const label = null;
-        const reviewed_label= null;
-        const status="UNLABELED";
-        const labeled_by = null;
-        const reviewed_by = null;
-        const asset: AssetDocument ={
+        const asset: AssetDocument = {
             taskId: taskId,
             key: key,
             source: source,
-            label: label,
-            reviewed_label: reviewed_label,
-            status: status,
-            labeled_by: labeled_by,
-            reviewed_by: reviewed_by
+            label: null,
+            labeled_by: null,
+            reviews: [],
+            status: "UNLABELED",
         };
         const assetsCol = await assetsCollection();
         const insertInfo = await assetsCol.insertOne(asset);
@@ -89,32 +82,46 @@ const assetDataMethods = {
             }
         )
     },
-    reviewAsset: async (assetId: ObjectId, reviewedLabel: string, reviewerId: ObjectId) => {
+    reviewAsset: async (assetId: ObjectId, label: string, reviewerId: ObjectId) => {
         assetId = validationMethods.common.id(assetId);
         reviewerId = validationMethods.common.id(reviewerId);
+
         const assetsCol = await assetsCollection();
         const taskCol = await tasksCollection();
-        const userCol = await usersCollection();
-        const asset  = await assetsCol.findOne({
-            _id: assetId,
-        });
-        if (asset === null) throw new DataError(404, "Asset not found.");
-        const task = await taskCol.findOne({_id: asset.taskId});
-        if (task === null) throw new DataError(404, "Task not found.");
-        reviewedLabel = validationMethods.asset.label(reviewedLabel, task.schema);
-        const user = await userCol.findOne({ _id: reviewerId});
-        if (user === null) throw new DataError(404, "Reviewer not found.");
-        if (user.type !== "reviewer") throw new DataError(400, "User is not a reviewer.");
-        await assetsCol.updateOne(
-            {_id: assetId},
+
+        const asset = await assetsCol.findOne({ _id: assetId });
+        if (asset === null) {
+            throw new DataError(404, "Asset not found.");
+        }
+
+        const task = await taskCol.findOne({ _id: asset.taskId }) as TaskDocument | null;
+        if (task === null) {
+            throw new DataError(404, "Task not found.");
+        }
+
+        const isAssigned = (task.assignedReviewerIds ?? []).some((id) => id.toString() === reviewerId.toString());
+        if (!isAssigned) {
+            throw new DataError(403, "You are not assigned to this task.");
+        }
+
+        label = validationMethods.asset.label(label, task.schema);
+
+        const result = await assetsCol.findOneAndUpdate(
             {
-                $set:{
-                    reviewed_label: reviewedLabel,
-                    status: "REVIEWED",
-                    labeled_by: reviewerId
-                }
-            }
-        )
+                _id: assetId,
+                "reviews.reviewerId": { $ne: reviewerId },
+                $expr: { $lt: [{ $size: { $ifNull: ["$reviews", []] } }, 3] },
+            },
+            { $push: { reviews: { reviewerId, label } } },
+            { returnDocument: "after" },
+        );
+        if (result === null) {
+            throw new DataError(400, "Already reviewed by you or review slots full.");
+        }
+
+        if (result.reviews.length === 3) {
+            await assetsCol.updateOne({ _id: assetId }, { $set: { status: "REVIEWED" } });
+        }
     },
     deleteAsset: async (assetId: ObjectId) => {
         const mongoId = validationMethods.common.id(assetId);

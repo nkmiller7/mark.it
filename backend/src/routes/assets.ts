@@ -7,7 +7,7 @@ import { ObjectId, WithId } from "mongodb";
 import { validationMethods, ValidationError } from "@/validation";
 import { authMiddleware, AuthenticatedRequest } from "@/middleware/auth";
 import { DataError } from "@/data/collections";
-import { assetDataMethods, AssetDocument } from "@/data/assets";
+import { assetDataMethods } from "@/data/assets";
 
 import {
     userDataMethods,
@@ -39,7 +39,7 @@ assetRoutes.get("/:id/url",
             const user = await userDataMethods.getUserByEmail(authReq.user.token.email!);
             const isAssigned =
                 task.assignedLabelerId?.toString() === user._id.toString() ||
-                task.assignedReviewerId?.toString() === user._id.toString();
+                (task.assignedReviewerIds ?? []).some((id) => id.toString() === user._id.toString());
             if (!isAssigned) {
                 throw new ValidationError(403, "You are not assigned to this task.");
             }
@@ -164,7 +164,7 @@ assetRoutes.patch("/:id/review",
             let reviewLabel = req.body.reviewLabel;
             reviewLabel = validationMethods.asset.label(reviewLabel, task.schema);
             await assetDataMethods.reviewAsset(assetId, reviewLabel, user._id);
-            return res.status(200).json({ message: "Asset successfully reviewed." });;
+            return res.status(200).json({ message: "Asset successfully reviewed." });
         } catch (e) {
             switch (true) {
                 case e instanceof ValidationError: {

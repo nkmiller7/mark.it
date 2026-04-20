@@ -149,7 +149,7 @@ const jobDataMethods = {
             schema: string[];
             status: string;
             labeler: { firstName: string; lastName: string } | null;
-            reviewer: { firstName: string; lastName: string } | null;
+            reviewers: { firstName: string; lastName: string }[];
         }[];
         contributors: {
             labelers: { _id: ObjectId; firstName: string; lastName: string }[];
@@ -172,8 +172,8 @@ const jobDataMethods = {
         for (const t of rawTasks) {
             if (t.assignedLabelerId)
                 labelerIds.add(t.assignedLabelerId.toString());
-            if (t.assignedReviewerId)
-                reviewerIds.add(t.assignedReviewerId.toString());
+            for (const id of t.assignedReviewerIds ?? [])
+                reviewerIds.add(id.toString());
         }
 
         const allUserIds = [...new Set([...labelerIds, ...reviewerIds])].map(
@@ -203,7 +203,7 @@ const jobDataMethods = {
             schema: t.schema,
             status: t.status,
             labeler: resolveUser(t.assignedLabelerId),
-            reviewer: resolveUser(t.assignedReviewerId),
+            reviewers: (t.assignedReviewerIds ?? []).map(resolveUser).filter((r): r is { firstName: string; lastName: string } => r !== null),
         }));
 
         const labelers = [...labelerIds]
