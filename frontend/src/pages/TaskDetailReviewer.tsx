@@ -8,20 +8,21 @@ interface Task {
     description: string;
     schema: string[];
     status: "unlabeled" | "labeled" | "reviewed";
-    assignedLabelerId: string | null;
+    assignedReviewerIds: string[];
 }
 
 interface Asset {
     _id: string;
     status: "UNLABELED" | "LABELED" | "REVIEWED";
     label: string | null;
+    reviews: { reviewerId: string; label: string }[];
 }
 
 interface Job {
     description: string;
 }
 
-export default function TaskDetailLabeler() {
+export default function TaskDetailReviewer() {
     const { id } = useParams();
     const { currentUser, userData, userLoading } = useAuth();
     const navigate = useNavigate();
@@ -30,11 +31,14 @@ export default function TaskDetailLabeler() {
     const [assets, setAssets] = useState<Asset[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [rejectMode, setRejectMode] = useState(false);
     const [selected, setSelected] = useState<string | null>(null);
     const [confirmed, setConfirmed] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [submitError, setSubmitError] = useState("");
+
+    const myId = userData?._id ?? "";
 
     useEffect(() => {
         const fetchData = async () => {
@@ -72,8 +76,6 @@ export default function TaskDetailLabeler() {
                 } else {
                     const assetData: Asset[] = await assetRes.json();
                     setAssets(assetData);
-                    const firstUnlabeled = assetData.findIndex((a) => a.status === "UNLABELED");
-                    setCurrentIndex(firstUnlabeled === -1 ? 0 : firstUnlabeled);
                 }
             } catch {
                 setError("Failed to load task.");
@@ -87,53 +89,96 @@ export default function TaskDetailLabeler() {
     }, [currentUser, id]);
 
     useEffect(() => {
+        if (assets.length === 0 || !myId) {
+            return;
+        }
+        const firstUnreviewed = assets.findIndex(
+            (a) => !a.reviews.some((r) => r.reviewerId === myId),
+        );
+        setCurrentIndex(firstUnreviewed === -1 ? 0 : firstUnreviewed);
+    }, [assets, myId]);
+
+    useEffect(() => {
         const fetchImageUrl = async () => {
-            if (assets.length === 0) return;
+            if (assets.length === 0) {
+                return;
+            }
             const token = await currentUser?.getIdToken();
             const res = await fetch(`/api/asset/${assets[currentIndex]._id}/url`, {
                 headers: { authorization: `Bearer ${token}` },
             });
-            if (!res.ok) return;
+            if (!res.ok) {
+                return;
+            }
             const data = await res.json();
             setImageUrl(data.url);
         };
         fetchImageUrl();
     }, [currentIndex, assets, currentUser]);
 
-    const handleConfirm = async () => {
-        if (!selected) {
-            return;
-        }
+    const submitReview = async (reviewLabel: string) => {
         setSubmitError("");
         const token = await currentUser?.getIdToken();
         const asset = assets[currentIndex];
-        const res = await fetch(`/api/asset/${asset._id}/label`, {
+        const res = await fetch(`/api/asset/${asset._id}/review`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
                 authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ label: selected }),
+            body: JSON.stringify({ reviewLabel }),
         });
         if (!res.ok) {
-            setSubmitError("Failed to submit label. Please try again.");
-            return;
+            setSubmitError("Failed to submit review. Please try again.");
+            return false;
         }
         setAssets((prev) =>
             prev.map((a, i) =>
-                i === currentIndex ? { ...a, status: "LABELED", label: selected } : a,
+                i === currentIndex
+                    ? { ...a, reviews: [...a.reviews, { reviewerId: myId, label: reviewLabel }] }
+                    : a,
             ),
         );
         setConfirmed(true);
+        return true;
     };
 
-    const handleNext = () => {
-        const nextUnlabeled = assets.findIndex((a, i) => i > currentIndex && a.status === "UNLABELED");
-        if (nextUnlabeled !== -1) {
-            setCurrentIndex(nextUnlabeled);
+    const handleApprove = async () => {
+        const asset = assets[currentIndex];
+        if (!asset.label) {
+            return;
+        }
+        await submitReview(asset.label);
+    };
+
+    const handleRejectConfirm = async () => {
+        if (!selected) {
+            return;
+        }
+        const ok = await submitReview(selected);
+        if (ok) {
+            setRejectMode(false);
+        }
+    };
+
+    const handleNext = async () => {
+        const nextUnreviewed = assets.findIndex(
+            (a, i) => i > currentIndex && !a.reviews.some((r) => r.reviewerId === myId),
+        );
+        if (nextUnreviewed !== -1) {
+            setCurrentIndex(nextUnreviewed);
             setSelected(null);
             setConfirmed(false);
+            setRejectMode(false);
         } else {
+            const token = await currentUser?.getIdToken();
+            await fetch(`/api/task/${id}/review`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: `Bearer ${token}`,
+                },
+            });
             navigate("/home");
         }
     };
@@ -154,14 +199,18 @@ export default function TaskDetailLabeler() {
         );
     }
 
-    if (userData?.type !== "labeler" || task.assignedLabelerId !== userData?._id || task.status !== "unlabeled") {
+    if (
+        userData?.type !== "reviewer" ||
+        !task.assignedReviewerIds.includes(myId) ||
+        task.status !== "labeled"
+    ) {
         return <Navigate to="/home" />;
     }
 
     if (assets.length === 0) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-                <p className="text-gray-500">This task has no assets to label.</p>
+                <p className="text-gray-500">This task has no assets to review.</p>
                 <button
                     onClick={() => navigate("/home")}
                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
@@ -172,9 +221,13 @@ export default function TaskDetailLabeler() {
         );
     }
 
-    const labeled = assets.filter((a) => a.status === "LABELED" || a.status === "REVIEWED").length;
-    const hasMoreUnlabeled = assets.some((a, i) => i !== currentIndex && a.status === "UNLABELED");
-    const isLastAsset = !hasMoreUnlabeled;
+    const reviewed = assets.filter((a) => a.reviews.some((r) => r.reviewerId === myId)).length;
+    const hasMoreUnreviewed = assets.some(
+        (a, i) => i !== currentIndex && !a.reviews.some((r) => r.reviewerId === myId),
+    );
+    const isLastAsset = !hasMoreUnreviewed;
+    const currentAsset = assets[currentIndex];
+    const alreadyReviewedThis = currentAsset.reviews.some((r) => r.reviewerId === myId);
 
     return (
         <div className="mx-auto max-w-5xl px-6 py-12">
@@ -187,7 +240,7 @@ export default function TaskDetailLabeler() {
                         <div
                             key={a._id}
                             className={`h-2 w-6 rounded-full transition-all ${
-                                a.status === "LABELED" || a.status === "REVIEWED"
+                                a.reviews.some((r) => r.reviewerId === myId)
                                     ? "bg-blue-500"
                                     : i === currentIndex
                                     ? "bg-blue-300"
@@ -196,7 +249,7 @@ export default function TaskDetailLabeler() {
                         />
                     ))}
                 </div>
-                <span className="text-sm text-gray-400">{labeled} / {assets.length} labeled</span>
+                <span className="text-sm text-gray-400">{reviewed} / {assets.length} reviewed</span>
             </div>
 
             <div className="flex gap-8 items-start">
@@ -209,39 +262,70 @@ export default function TaskDetailLabeler() {
                 </div>
                 <div className="w-64 shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-6">
                     <p className="mb-1 text-xs text-gray-400">Image {currentIndex + 1} of {assets.length}</p>
-                    <p className="mb-4 text-sm font-semibold text-gray-900">
-                        {task.description}
-                    </p>
-                    <div className="space-y-2">
-                        {task.schema.map((option) => (
-                            <button
-                                key={option}
-                                onClick={() => !confirmed && setSelected(option)}
-                                disabled={confirmed}
-                                className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition ${selected === option ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white dark: bg-gray-900 text-gray-700"} ${!confirmed ? "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 cursor-pointer" : "cursor-not-allowed text-gray-400"}`}
-                            >
-                                {option}
-                            </button>
-                        ))}
+                    <p className="mb-1 text-sm font-semibold text-gray-900">{task.description}</p>
+                    <div className="mb-4 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Labeler chose:</span>
+                        <span className="rounded-full bg-blue-100 border border-blue-300 px-2 py-0.5 text-xs font-medium text-blue-700">
+                            {currentAsset.label ?? "—"}
+                        </span>
                     </div>
+
                     {submitError && (
-                        <p className="mt-3 text-xs text-red-600">{submitError}</p>
+                        <p className="mb-3 text-xs text-red-600">{submitError}</p>
                     )}
-                    {!confirmed && selected && (
-                        <button
-                            onClick={handleConfirm}
-                            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
-                        >
-                            Confirm
-                        </button>
-                    )}
-                    {confirmed && (
+
+                    {alreadyReviewedThis || confirmed ? (
                         <button
                             onClick={handleNext}
-                            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
                         >
                             {isLastAsset ? "Finish Task" : "Next Image"}
                         </button>
+                    ) : rejectMode ? (
+                        <>
+                            <p className="mb-2 text-xs text-gray-500">Select the correct label:</p>
+                            <div className="space-y-2">
+                                {task.schema.map((option) => (
+                                    <button
+                                        key={option}
+                                        onClick={() => setSelected(option)}
+                                        className={`w-full rounded-lg border px-4 py-2 text-left text-sm transition cursor-pointer ${selected === option ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"}`}
+                                    >
+                                        {option}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={() => { setRejectMode(false); setSelected(null); }}
+                                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRejectConfirm}
+                                    disabled={!selected}
+                                    className="flex-1 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleApprove}
+                                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition"
+                            >
+                                Approve
+                            </button>
+                            <button
+                                onClick={() => setRejectMode(true)}
+                                className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition"
+                            >
+                                Reject
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

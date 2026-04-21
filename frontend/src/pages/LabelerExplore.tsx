@@ -163,6 +163,8 @@ export default function LabelerExplore() {
         );
     }
 
+    const visibleJobs = jobs.filter((job) => showAll || (userData?.rating ?? 0) >= job.ratingRequired.labeler);
+
     return (
         <div className="mx-auto max-w-4xl px-6 py-12">
             <div className="flex items-center justify-between mb-8">
@@ -170,7 +172,7 @@ export default function LabelerExplore() {
                     Labeler - Explore Jobs
                 </h1>
                 <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="text-sm text-gray-600">Show All Jobs</span>
+                    <span className="text-sm text-gray-600">Ignore Rating</span>
                     <div
                         onClick={() => setShowAll((prev) => !prev)}
                         className={`relative w-10 h-6 rounded-full transition ${showAll ? "bg-blue-600" : "bg-gray-300"}`}
@@ -179,11 +181,11 @@ export default function LabelerExplore() {
                     </div>
                 </label>
             </div>
-            {jobs.length === 0 ? (
-                <p className="text-gray-500">No jobs available.</p>
+            {visibleJobs.length === 0 ? (
+                <p className="text-gray-500">{jobs.length === 0 ? "No jobs available." : "No jobs match your rating."}</p>
             ) : (
                 <div className="grid gap-4">
-                    {jobs.filter((job) => showAll || (userData?.rating ?? 0) >= job.ratingRequired.labeler).map((job) => {
+                    {visibleJobs.map((job) => {
                         const meetsRating = (userData?.rating ?? 0) >= job.ratingRequired.labeler;
                         return (
                         <div
@@ -222,8 +224,8 @@ export default function LabelerExplore() {
                                         </>
                                     )}
                                     {!meetsRating && (
-                                        <span className="inline-flex items-center rounded-full bg-white dark: bg-gray-900 border border-gray-200 px-3 py-1 text-xs text-gray-400">
-                                            Your rating does not meet the minimum required rating for this job
+                                        <span className="inline-flex items-center rounded-full bg-white border border-gray-200 px-3 py-1 text-xs text-gray-400">
+                                            Rating too low
                                         </span>
                                     )}
                                 </div>

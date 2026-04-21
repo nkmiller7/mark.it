@@ -25,14 +25,7 @@ export default function Home() {
         case "labeler":
             return <LabelerHome />;
         case "reviewer":
-            return (
-                <ReviewerHome
-                    firstName={userData.firstName!}
-                    lastName={userData.lastName!}
-                    email={userData.email}
-                    rating={userData.rating!}
-                />
-            );
+            return <ReviewerHome />;
         default:
             return (
                 <div className="flex min-h-screen flex-col items-center justify-center bg-white dark: bg-gray-900 px-4">

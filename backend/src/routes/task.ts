@@ -119,7 +119,7 @@ taskRoutes.get(
             );
             const isAssigned =
                 task.assignedLabelerId?.toString() === user._id.toString() ||
-                task.assignedReviewerId?.toString() === user._id.toString();
+                (task.assignedReviewerIds ?? []).some((id) => id.toString() === user._id.toString());
             if (!isAssigned) {
                 throw new ValidationError(
                     403,
@@ -323,4 +323,62 @@ taskRoutes.patch(
         }
     },
 );
+
+taskRoutes.patch(
+    "/:id/review",
+    authMiddleware.authenticateLabelerOrReviewerRequest,
+    async (req: Request, res: Response) => {
+        try {
+            const authReq = req as AuthenticatedRequest;
+            const taskId: ObjectId = validationMethods.common.id(authReq.params.id);
+            const user = await userDataMethods.getUserByEmail(authReq.user.token.email!);
+            if (user.type !== "reviewer")
+                throw new ValidationError(403, "Only reviewers can submit reviews.");
+            await taskDataMethods.completeReview(taskId.toString(), user._id.toString());
+            return res.status(200).json({ message: "Review submitted successfully." });
+        } catch (e) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res.status((e as ValidationError).code).json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res.status((e as DataError).code).json({ error: (e as DataError).message });
+                }
+                default: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+taskRoutes.delete(
+    "/:taskId",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: Request, res: Response) => {
+        try {
+            const authReq = req as AuthenticatedRequest;
+            const mongoId = validationMethods.common.id(authReq.params.taskId);
+            await taskDataMethods.deleteTask(String(mongoId));
+            return res.status(200).json("Successfully deleted task");
+        } catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                default: {
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
 export { taskRoutes };

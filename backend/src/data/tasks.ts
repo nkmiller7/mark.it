@@ -8,7 +8,8 @@ interface TaskDocument {
     description: string;
     schema: string[];
     assignedLabelerId: ObjectId | null;
-    assignedReviewerId: ObjectId | null;
+    assignedReviewerIds: ObjectId[];
+    completedReviewerIds: ObjectId[];
     status: "unlabeled" | "labeled" | "reviewed";
 }
 
@@ -50,9 +51,8 @@ const taskDataMethods = {
         task.assignedLabelerId = task.assignedLabelerId
             ? validationMethods.common.id(task.assignedLabelerId)
             : null;
-        task.assignedReviewerId = task.assignedReviewerId
-            ? validationMethods.common.id(task.assignedReviewerId)
-            : null;
+        task.assignedReviewerIds = [];
+        task.completedReviewerIds = [];
         task.status = validationMethods.task.status(task.status);
 
         const tasksCol = await tasksCollection();
@@ -72,7 +72,7 @@ const taskDataMethods = {
                     $match: {
                         $or: [
                             { assignedLabelerId: mongoUserId },
-                            { assignedReviewerId: mongoUserId },
+                            { assignedReviewerIds: mongoUserId },
                         ],
                     },
                 },
@@ -126,8 +126,8 @@ const taskDataMethods = {
             }
         } else {
             const result = await tasksCol.findOneAndUpdate(
-                { _id: mongoTaskId, assignedReviewerId: mongoUserId },
-                { $set: { assignedReviewerId: null } },
+                { _id: mongoTaskId, assignedReviewerIds: { $elemMatch: { $eq: mongoUserId } } },
+                { $pull: { assignedReviewerIds: mongoUserId, completedReviewerIds: mongoUserId } },
             );
             if (result === null) {
                 throw new DataError(400, "Task not found or not assigned to you.");
@@ -155,12 +155,39 @@ const taskDataMethods = {
             }
         } else {
             const result = await tasksCol.findOneAndUpdate(
-                { _id: mongoTaskId, assignedReviewerId: null },
-                { $set: { assignedReviewerId: mongoUserId } },
+                {
+                    _id: mongoTaskId,
+                    status: "labeled",
+                    assignedReviewerIds: { $ne: mongoUserId },
+                    $expr: { $lt: [{ $size: { $ifNull: ["$assignedReviewerIds", []] } }, 3] },
+                },
+                { $push: { assignedReviewerIds: mongoUserId } },
             );
             if (result === null) {
-                throw new DataError(400, "Task not found or already claimed.");
+                throw new DataError(400, "Task not found, already claimed by you, or reviewer slots full.");
             }
+        }
+    },
+
+    completeReview: async (taskId: string, userId: string): Promise<void> => {
+        const mongoTaskId = validationMethods.common.id(taskId);
+        const mongoUserId = validationMethods.common.id(userId);
+
+        const tasksCol = await tasksCollection();
+        const result = await tasksCol.findOneAndUpdate(
+            {
+                _id: mongoTaskId,
+                assignedReviewerIds: mongoUserId,
+                completedReviewerIds: { $ne: mongoUserId },
+            },
+            { $push: { completedReviewerIds: mongoUserId } },
+            { returnDocument: "after" },
+        );
+        if (result === null) {
+            throw new DataError(400, "Task not found, not assigned to you, or already reviewed by you.");
+        }
+        if (result.completedReviewerIds.length === 3) {
+            await tasksCol.updateOne({ _id: mongoTaskId }, { $set: { status: "reviewed" } });
         }
     },
     deleteTask: async (id: string) => {
