@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Trash } from 'lucide-react';
 import Card from "../components/Card";
+
 
 interface Contributor {
     _id: string;
@@ -62,6 +65,7 @@ export default function JobDetail() {
     const [data, setData] = useState<JobDetailData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -114,6 +118,30 @@ export default function JobDetail() {
     const pct =
         tasks.length > 0 ? Math.round((reviewedCount / tasks.length) * 100) : 0;
 
+    async function handleDelete(e: React.FormEvent) {
+        e.preventDefault();
+        try {
+            const token = await currentUser?.getIdToken();
+            let res = await fetch(`/api/job/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    jobId: id
+                }),
+            });
+            if (!res.ok) {
+                setError( "Failed to delete job." );
+                return;
+            }
+            navigate("/home");
+        } catch {
+            setError( "Failed to delete job.");
+        } 
+    }
+
     return (
         <div className="mx-auto max-w-5xl px-6 py-10">
             {/* Back link */}
@@ -140,9 +168,18 @@ export default function JobDetail() {
 
             {/* Job info */}
             <Card className="mt-6 p-6">
-                <h1 className="text-xl font-bold text-gray-900">
-                    {job.description}
-                </h1>
+                <span className = "flex items-center justify-between">
+                    <h1 className="text-xl font-bold text-gray-900">
+                        {job.description}
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
+                    >
+                    <Trash />
+                    </button>
+                </span>
 
                 <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
                     <div>

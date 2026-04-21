@@ -262,7 +262,7 @@ const jobDataMethods = {
         };
     },
     deleteJob: async (
-        id: ObjectId
+        id: string
     ) => {
         const mongoId = validationMethods.common.id(id);
         const jobsCol = await jobsCollection();
@@ -275,7 +275,7 @@ const jobDataMethods = {
         for(let task of jobTasks){
             await taskDataMethods.deleteTask(String(task._id));
         }
-        await jobsCol.deleteOne(mongoId);
+        await jobsCol.deleteOne( {_id: mongoId});
     }
 };
 
