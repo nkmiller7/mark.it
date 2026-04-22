@@ -39,7 +39,7 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className="flex flex-col items-center bg-white px-4 pt-12">
+        <div className="flex flex-col items-center bg-white dark: bg-gray-900 px-4 pt-12">
             <h1 className="text-3xl font-bold text-gray-900">
                 Forgot Password
             </h1>

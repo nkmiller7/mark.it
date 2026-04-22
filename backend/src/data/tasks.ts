@@ -190,15 +190,17 @@ const taskDataMethods = {
             await tasksCol.updateOne({ _id: mongoTaskId }, { $set: { status: "reviewed" } });
         }
     },
-    deleteTask: async (id: string) => {
+    deleteTask: async (id: string, wholeJob: boolean) => {
         const tasksCol = await tasksCollection();
         const assetsCol = await assetsCollection();
         const mongoId = validationMethods.common.id(id);
         const task = await tasksCol.findOne({_id: mongoId});
         if(task === null) throw new DataError(404, "Task not found.");
         const jobTasks = await tasksCol.find({jobId: task.jobId}).toArray();
-        if(jobTasks.length < 2){
-            throw new DataError(400, "Cannot remove task if job only has one task.");
+        if(wholeJob === false){
+            if(jobTasks.length < 2){
+                throw new DataError(400, "Cannot remove task if job only has one task.");
+            }
         }
         const taskAssets = await assetsCol.find({taskId: mongoId}).toArray();
         for(let asset of taskAssets){

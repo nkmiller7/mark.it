@@ -345,8 +345,38 @@ jobRoutes.delete(
         try {
             const authReq = req as AuthenticatedRequest;
             const mongoId = validationMethods.common.id(authReq.params.jobId);
-            await jobDataMethods.deleteJob(mongoId);
+            await jobDataMethods.deleteJob(String(mongoId));
             return res.status(200).json("Successfully deleted job");
+        } catch (e: unknown) {
+            switch (true) {
+                case e instanceof ValidationError: {
+                    return res
+                        .status((e as ValidationError).code)
+                        .json({ error: (e as ValidationError).message });
+                }
+                case e instanceof DataError: {
+                    return res
+                        .status((e as DataError).code)
+                        .json({ error: (e as DataError).message });
+                }
+                default: {
+                    console.log(res.status(500).json({ error: e }))
+                    return res.status(500).json({ error: e });
+                }
+            }
+        }
+    },
+);
+
+jobRoutes.delete(
+    "/:jobId/:taskId",
+    authMiddleware.authenticateOwnerRequest,
+    async (req: Request, res: Response) => {
+        try {
+            const authReq = req as AuthenticatedRequest;
+            const mongoId = validationMethods.common.id(authReq.params.taskId);
+            await taskDataMethods.deleteTask(String(mongoId), false);
+            return res.status(200).json("Successfully deleted task");
         } catch (e: unknown) {
             switch (true) {
                 case e instanceof ValidationError: {

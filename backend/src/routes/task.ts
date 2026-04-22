@@ -359,7 +359,7 @@ taskRoutes.delete(
         try {
             const authReq = req as AuthenticatedRequest;
             const mongoId = validationMethods.common.id(authReq.params.taskId);
-            await taskDataMethods.deleteTask(String(mongoId));
+            await taskDataMethods.deleteTask(String(mongoId), false);
             return res.status(200).json("Successfully deleted task");
         } catch (e: unknown) {
             switch (true) {
