@@ -335,7 +335,7 @@ const jobDataMethods = {
         // TODO: Implement local file retrieval for non-prod environments.
         throw new DataError(500, "Failed to retrieve labeled assets.");
     },
-    deleteJob: async (id: ObjectId) => {
+    deleteJob: async (id: string) => {
         const mongoId = validationMethods.common.id(id);
         const jobsCol = await jobsCollection();
         const tasksCol = await tasksCollection();
@@ -345,9 +345,9 @@ const jobDataMethods = {
         if (job === null) throw new DataError(404, "Job not found.");
         const jobTasks = await tasksCol.find({ jobId: mongoId }).toArray();
         for (let task of jobTasks) {
-            await taskDataMethods.deleteTask(String(task._id));
+            await taskDataMethods.deleteTask(String(task._id), true);
         }
-        await jobsCol.deleteOne(mongoId);
+        await jobsCol.deleteOne({ _id: mongoId });
     }
 };
 

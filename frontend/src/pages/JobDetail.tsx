@@ -120,8 +120,7 @@ export default function JobDetail() {
     const pct =
         tasks.length > 0 ? Math.round((reviewedCount / tasks.length) * 100) : 0;
 
-    async function handleDelete(e: React.FormEvent) {
-        e.preventDefault();
+    async function handleDelete() {
         try {
             const token = await currentUser?.getIdToken();
             let res = await fetch(`/api/job/${id}`, {
@@ -129,13 +128,11 @@ export default function JobDetail() {
                 headers: {
                     "Content-Type": "application/json",
                     authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    jobId: id
-                }),
+                }
             });
             if (!res.ok) {
-                setError( "Failed to delete job." );
+                const body = await res.json().catch(() => null);
+                setError(body?.error || "Failed to delete task.");
                 return;
             }
             navigate("/home");
@@ -144,6 +141,26 @@ export default function JobDetail() {
         } 
     }
 
+    async function handleDeleteTask(taskId: string) {
+         try {
+            const token = await currentUser?.getIdToken();
+            let res = await fetch(`/api/job/${id}/${taskId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: `Bearer ${token}`,
+                }
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setError(body?.error || "Failed to delete task.");
+                return;
+            }
+             setData(prev => prev ? { ...prev, tasks: prev.tasks.filter(task => task._id !== taskId) } : prev);
+        } catch {
+            setError( "Failed to delete task.");
+        } 
+    }
     const handleDownload = async () => {
         try {
             setDownloading(true);
@@ -461,6 +478,15 @@ export default function JobDetail() {
                                         )}
                                     </div>
                                 )}
+                                <div className="flex justify-end">
+                                    <button 
+                                        type="button"
+                                        onClick={() => handleDeleteTask(task._id)}
+                                        className="rounded-lg border border-red-300 px-2 py-1 text-sm font-sm text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
+                                    >
+                                        <Trash />
+                                    </button>
+                                </div>
                             </Card>
                         );
                     })}
