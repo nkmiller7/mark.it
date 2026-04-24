@@ -14,11 +14,13 @@ interface LabelerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
     rating: number;
+    numAssetsProcessed: number;
 }
 interface ReviewerUserDocument extends UserDocument {
     firstName: string;
     lastName: string;
     rating: number;
+    numAssetsProcessed: number;
 }
 
 const userDataMethods = {
@@ -39,6 +41,14 @@ const userDataMethods = {
     },
     isReviewerUser: (user: UserDocument): user is ReviewerUserDocument => {
         return user.type === "reviewer";
+    },
+    isLabelerOrReviewerUser: (
+        user: UserDocument,
+    ): user is LabelerUserDocument | ReviewerUserDocument => {
+        return (
+            user.type === "labeler" ||
+            user.type === "reviewer"
+        );
     },
 
     createUser: async (
@@ -72,6 +82,7 @@ const userDataMethods = {
                     labelerUser.lastName,
                 );
                 labelerUser.rating = 0;
+                labelerUser.numAssetsProcessed = 0;
                 const insertInfo = await usersCol.insertOne(labelerUser);
                 if (insertInfo.acknowledged !== true)
                     throw new DataError(500, "Failed to create new user.");
@@ -89,6 +100,7 @@ const userDataMethods = {
                     reviewerUser.lastName,
                 );
                 reviewerUser.rating = 0;
+                reviewerUser.numAssetsProcessed = 0;
                 const insertInfo = await usersCol.insertOne(reviewerUser);
                 if (insertInfo.acknowledged !== true)
                     throw new DataError(500, "Failed to create new user.");

@@ -335,6 +335,7 @@ const validationMethods = {
                                 body.lastName,
                             ),
                             rating: 0,
+                            numAssetsProcessed: 0,
                         };
                         return labelerUser;
                     }
@@ -349,6 +350,7 @@ const validationMethods = {
                                 body.lastName,
                             ),
                             rating: 0,
+                            numAssetsProcessed: 0,
                         };
                         return reviewerUser;
                     }
