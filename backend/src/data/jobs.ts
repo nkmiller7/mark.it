@@ -285,8 +285,7 @@ const jobDataMethods = {
             const taskAssets = await assetsCol
                 .find({
                     taskId: task._id,
-                    status: { $in: ["LABELED"] },
-                    //statues: { $in: ["LABELED", "REVIEWED"] },
+                    status: { $eq: "REVIEWED" },
                 })
                 .toArray();
             labeledAssets.push(...taskAssets);
@@ -308,6 +307,17 @@ const jobDataMethods = {
                 Key: assetS3Key,
             });
 
+            const potentialLabels = [
+                asset.label,
+                asset.reviews.map((r) => r.label),
+            ].flat();
+            const dominantLabel = potentialLabels.reduce((prev, curr) =>
+                potentialLabels.filter((el) => el === curr).length >
+                potentialLabels.filter((el) => el === prev).length
+                    ? curr
+                    : prev,
+            );
+
             let fileBytes: Uint8Array = new Uint8Array();
             try {
                 const response = await s3.send(command);
@@ -321,7 +331,7 @@ const jobDataMethods = {
                 throw new DataError(500, "Failed to retrieve asset from S3");
             }
             zip.file(
-                `${asset.label}_${asset.taskId.toString()}_${asset._id.toString()}`,
+                `${dominantLabel}_${asset._id.toString()}`,
                 fileBytes,
             );
         }
