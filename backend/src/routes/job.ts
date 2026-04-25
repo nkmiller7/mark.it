@@ -360,7 +360,6 @@ jobRoutes.delete(
                         .json({ error: (e as DataError).message });
                 }
                 default: {
-                    console.log(res.status(500).json({ error: e }))
                     return res.status(500).json({ error: e });
                 }
             }

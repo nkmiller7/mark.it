@@ -203,7 +203,12 @@ const jobDataMethods = {
             schema: t.schema,
             status: t.status,
             labeler: resolveUser(t.assignedLabelerId),
-            reviewers: (t.assignedReviewerIds ?? []).map(resolveUser).filter((r): r is { firstName: string; lastName: string } => r !== null),
+            reviewers: (t.assignedReviewerIds ?? [])
+                .map(resolveUser)
+                .filter(
+                    (r): r is { firstName: string; lastName: string } =>
+                        r !== null,
+                ),
         }));
 
         const labelers = [...labelerIds]
@@ -287,53 +292,45 @@ const jobDataMethods = {
             labeledAssets.push(...taskAssets);
         }
 
-        if (process.env.MODE === "prod") {
-            const s3 = new S3Client({
-                credentials: {
-                    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-                },
-                region: process.env.AWS_REGION,
+        const s3 = new S3Client({
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+            },
+            region: process.env.AWS_REGION,
+        });
+        const zip = new JSZip();
+
+        for (let asset of labeledAssets) {
+            const assetS3Key = asset.key;
+            const command = new GetObjectCommand({
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: assetS3Key,
             });
-            const zip = new JSZip();
 
-            for (let asset of labeledAssets) {
-                const assetS3Key = asset.key;
-                const command = new GetObjectCommand({
-                    Bucket: process.env.S3_BUCKET_NAME,
-                    Key: assetS3Key,
-                });
-
-                let fileBytes: Uint8Array = new Uint8Array();
-                try {
-                    const response = await s3.send(command);
-                    if (!response.Body)
-                        throw new DataError(
-                            500,
-                            "Failed to retrieve asset from S3",
-                        );
-                    fileBytes = await response.Body.transformToByteArray();
-                } catch (e) {
+            let fileBytes: Uint8Array = new Uint8Array();
+            try {
+                const response = await s3.send(command);
+                if (!response.Body)
                     throw new DataError(
                         500,
                         "Failed to retrieve asset from S3",
                     );
-                }
-                zip.file(
-                    `${asset.label}_${asset.taskId.toString()}_${asset._id.toString()}`,
-                    fileBytes,
-                );
+                fileBytes = await response.Body.transformToByteArray();
+            } catch (e) {
+                throw new DataError(500, "Failed to retrieve asset from S3");
             }
-            const content = await zip.generateAsync({
-                type: "nodebuffer",
-                compression: "DEFLATE",
-                compressionOptions: { level: 6 },
-            });
-            return content;
+            zip.file(
+                `${asset.label}_${asset.taskId.toString()}_${asset._id.toString()}`,
+                fileBytes,
+            );
         }
-
-        // TODO: Implement local file retrieval for non-prod environments.
-        throw new DataError(500, "Failed to retrieve labeled assets.");
+        const content = await zip.generateAsync({
+            type: "nodebuffer",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 },
+        });
+        return content;
     },
     deleteJob: async (id: string) => {
         const mongoId = validationMethods.common.id(id);
@@ -348,7 +345,7 @@ const jobDataMethods = {
             await taskDataMethods.deleteTask(String(task._id), true);
         }
         await jobsCol.deleteOne({ _id: mongoId });
-    }
+    },
 };
 
 export { JobDocument, jobDataMethods };

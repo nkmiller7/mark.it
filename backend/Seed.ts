@@ -84,7 +84,7 @@ const labelers = [
 ];
 
 for (const { password, ...l } of labelers) {
-    await userDataMethods.createUser({ ...l, type: "labeler", rating: 0 });
+    await userDataMethods.createUser({ ...l, type: "labeler", rating: 0, numAssetsProcessed: 0 });
     await firebaseAuth.createUser({ email: l.email, password });
 }
 
@@ -97,7 +97,7 @@ const reviewers = [
 ];
 
 for (const { password, ...r } of reviewers) {
-    await userDataMethods.createUser({ ...r, type: "reviewer", rating: 0 });
+    await userDataMethods.createUser({ ...r, type: "reviewer", rating: 0, numAssetsProcessed: 0 });
     await firebaseAuth.createUser({ email: r.email, password });
 }
 
