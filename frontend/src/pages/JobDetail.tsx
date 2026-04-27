@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Trash } from 'lucide-react';
+import { CircleHelp, Trash } from "lucide-react";
 import Card from "../components/Card";
-
 
 interface Contributor {
     _id: string;
@@ -128,7 +127,7 @@ export default function JobDetail() {
                 headers: {
                     "Content-Type": "application/json",
                     authorization: `Bearer ${token}`,
-                }
+                },
             });
             if (!res.ok) {
                 const body = await res.json().catch(() => null);
@@ -137,29 +136,38 @@ export default function JobDetail() {
             }
             navigate("/home");
         } catch {
-            setError( "Failed to delete job.");
-        } 
+            setError("Failed to delete job.");
+        }
     }
 
     async function handleDeleteTask(taskId: string) {
-         try {
+        try {
             const token = await currentUser?.getIdToken();
             let res = await fetch(`/api/job/${id}/${taskId}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
                     authorization: `Bearer ${token}`,
-                }
+                },
             });
             if (!res.ok) {
                 const body = await res.json().catch(() => null);
                 setError(body?.error || "Failed to delete task.");
                 return;
             }
-             setData(prev => prev ? { ...prev, tasks: prev.tasks.filter(task => task._id !== taskId) } : prev);
+            setData((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          tasks: prev.tasks.filter(
+                              (task) => task._id !== taskId,
+                          ),
+                      }
+                    : prev,
+            );
         } catch {
-            setError( "Failed to delete task.");
-        } 
+            setError("Failed to delete task.");
+        }
     }
     const handleDownload = async () => {
         try {
@@ -224,7 +232,7 @@ export default function JobDetail() {
 
             {/* Job info */}
             <Card className="mt-6 p-6">
-                <span className = "flex items-center justify-between">
+                <span className="flex items-center justify-between">
                     <h1 className="text-xl font-bold text-gray-900">
                         {job.description}
                     </h1>
@@ -233,7 +241,7 @@ export default function JobDetail() {
                         onClick={handleDelete}
                         className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
                     >
-                    <Trash />
+                        <Trash />
                     </button>
                 </span>
 
@@ -282,7 +290,7 @@ export default function JobDetail() {
                     </div>
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-5 flex items-center gap-2">
                     <button
                         onClick={onDownloadClick}
                         disabled={downloading}
@@ -327,6 +335,24 @@ export default function JobDetail() {
                         )}
                         {downloading ? "Downloading…" : "Download Labeled Data"}
                     </button>
+
+                    <div className="group relative">
+                        <button
+                            type="button"
+                            aria-label="About ZIP contents"
+                            className="inline-flex size-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 transition hover:text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        >
+                            <CircleHelp className="size-4" />
+                        </button>
+                        <div className="pointer-events-none absolute left-0 top-10 z-10 hidden w-80 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg group-hover:block group-focus-within:block">
+                            The ZIP includes only assets that are fully
+                            reviewed. Each file is named with the dominant label
+                            and asset ID (for example, <code>cat_661ab...</code>
+                            ). The dominant label is chosen by majority vote
+                            across the labeler label and reviewer labels (up to
+                            three reviewers).
+                        </div>
+                    </div>
                 </div>
             </Card>
 
@@ -479,9 +505,11 @@ export default function JobDetail() {
                                     </div>
                                 )}
                                 <div className="flex justify-end">
-                                    <button 
+                                    <button
                                         type="button"
-                                        onClick={() => handleDeleteTask(task._id)}
+                                        onClick={() =>
+                                            handleDeleteTask(task._id)
+                                        }
                                         className="rounded-lg border border-red-300 px-2 py-1 text-sm font-sm text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
                                     >
                                         <Trash />
