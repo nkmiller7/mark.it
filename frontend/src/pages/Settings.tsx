@@ -17,7 +17,6 @@ export default function Settings() {
     const [userData, setUserData] = useState<UserData | null>(null);
     const [error, setError] = useState<string | null>(null);
     //const [darkMode, setDarkMode] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -124,32 +123,6 @@ export default function Settings() {
                         <ThemeToggle />
                     </div>
                 </div>
-                {!confirmDelete ? (
-                    <button
-                        onClick={() => setConfirmDelete(true)}
-                        className="block w-full rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition"
-                    >
-                        Delete Account (Not Yet Implemented)
-                    </button>
-                ) : (
-                    <div className="rounded-lg border border-red-300 px-4 py-3 space-y-2">
-                        <div className="text-sm font-medium text-gray-700 text-center">
-                            Are you sure you want to delete your account?
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="flex-1 rounded-lg border border-red-400 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition">
-                                Yes
-                                {/*  will have to come back to this later, because we'd have to consider what happens to jobs, tasks, etc.*/}
-                            </button>
-                            <button
-                                onClick={() => setConfirmDelete(false)}
-                                className="flex-1 rounded-lg border border-blue-400 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
-                            >
-                                No
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
