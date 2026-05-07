@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import ThemeToggle from '../components/ThemeToggle';
+// import ThemeToggle from '../components/ThemeToggle';
 
 interface UserData {
     email: string;
@@ -115,14 +115,14 @@ export default function Settings() {
                 >
                     Change Password
                 </Link>
-                <div className="flex items-center justify-between rounded-lg border border-gray-300 px-4 py-2">
+                {/* <div className="flex items-center justify-between rounded-lg border border-gray-300 px-4 py-2">
                     <div className="text-sm font-medium text-gray-700">
                         Dark Mode
                     </div>
                     <div>
                         <ThemeToggle />
                     </div>
-                </div>
+                </div> */}
             </div>
         </div>
     );
