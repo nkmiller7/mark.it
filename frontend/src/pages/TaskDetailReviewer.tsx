@@ -329,7 +329,7 @@ export default function TaskDetailReviewer() {
                                 Select the correct label:
                             </p>
                             <div className="space-y-2">
-                                {task.schema.map((option) => (
+                                {task.schema.filter((option) => option !== currentAsset.label).map((option) => (
                                     <button
                                         key={option}
                                         onClick={() => setSelected(option)}
