@@ -229,8 +229,8 @@ export default function CreateJob() {
 
     return (
         <div className="mx-auto max-w-3xl px-6 py-10">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Job</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900">Create Job</h1>
+            <p className="mt-1 text-sm text-gray-500">
                 Define your labeling job and add one or more tasks.
             </p>
 
@@ -243,12 +243,12 @@ export default function CreateJob() {
             <form onSubmit={handleSubmit} className="mt-8 space-y-8">
                 {/* Job Info */}
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <h2 className="text-lg font-semibold text-gray-800">
                         Job Details
                     </h2>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-white">
+                        <label className="block text-sm font-medium text-gray-700">
                             Description
                         </label>
                         <textarea
@@ -263,14 +263,14 @@ export default function CreateJob() {
                             <span className="text-red-600">
                                 {errors.description ?? ""}
                             </span>
-                            <span className="text-gray-400 dark:text-white">
+                            <span className="text-gray-400">
                                 {description.trim().length}/200
                             </span>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-white">
+                        <label className="block text-sm font-medium text-gray-700">
                             Deadline Date
                         </label>
                         <input
@@ -278,7 +278,7 @@ export default function CreateJob() {
                             value={deadlineDate}
                             min={new Date().toISOString().split("T")[0]}
                             onChange={(e) => setDeadlineDate(e.target.value)}
-                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                         />
                         {errors.deadlineDate && (
                             <p className="mt-1 text-xs text-red-600">
@@ -289,7 +289,7 @@ export default function CreateJob() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-white">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Min. Labeler Rating
                             </label>
                             <input
@@ -301,7 +301,7 @@ export default function CreateJob() {
                                 onChange={(e) =>
                                     setLabelerRating(Number(e.target.value))
                                 }
-                                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                             />
                             {errors.labelerRating && (
                                 <p className="mt-1 text-xs text-red-600">
@@ -310,7 +310,7 @@ export default function CreateJob() {
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-white">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Min. Reviewer Rating
                             </label>
                             <input
@@ -342,7 +342,7 @@ export default function CreateJob() {
                         <button
                             type="button"
                             onClick={addTask}
-                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-black transition"
+                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
                         >
                             + Add Task
                         </button>
@@ -354,7 +354,7 @@ export default function CreateJob() {
                             className="rounded-xl border border-gray-200 bg-gray-50 overflow-hidden"
                         >
                             {/* Task header */}
-                            <div className="flex items-center justify-between bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-200">
+                            <div className="flex items-center justify-between bg-white px-4 py-3 border-b border-gray-200">
                                 <button
                                     type="button"
                                     onClick={() =>

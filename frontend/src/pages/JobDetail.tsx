@@ -239,7 +239,7 @@ export default function JobDetail() {
                     <button
                         type="button"
                         onClick={handleDelete}
-                        className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
+                        className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 transition"
                     >
                         <Trash />
                     </button>
@@ -510,7 +510,7 @@ export default function JobDetail() {
                                         onClick={() =>
                                             handleDeleteTask(task._id)
                                         }
-                                        className="rounded-lg border border-red-300 px-2 py-1 text-sm font-sm text-red-700 dark:text-red hover:bg-red-50 dark:hover:bg-maroon transition"
+                                        className="rounded-lg border border-red-300 px-2 py-1 text-sm font-sm text-red-700 hover:bg-red-50 transition"
                                     >
                                         <Trash />
                                     </button>
