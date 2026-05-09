@@ -97,7 +97,7 @@ export default function LabelerHome() {
                             {incomplete.map((task) => (
                                 <div
                                     key={task._id}
-                                    className="rounded-lg border border-gray-200 bg-white dark: bg-gray-900 overflow-hidden text-sm flex items-stretch"
+                                    className="rounded-lg border border-gray-200 bg-white overflow-hidden text-sm flex items-stretch"
                                 >
                                     <div className="flex items-start justify-between gap-4 p-4 flex-1 min-w-0">
                                         <div className="space-y-1 min-w-0">

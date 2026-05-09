@@ -99,7 +99,7 @@ export default function SignUp() {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-            <div className="w-full max-w-sm rounded-xl bg-white dark: bg-gray-900 p-8 shadow-sm border border-gray-200">
+            <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-sm border border-gray-200">
                 <h1 className="text-2xl font-bold text-gray-900">
                     Create your account
                 </h1>
@@ -127,7 +127,7 @@ export default function SignUp() {
                                     className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                                         userType === type
                                             ? "bg-blue-600 text-white"
-                                            : "bg-white dark: bg-gray-900 text-gray-700 hover:bg-gray-50"
+                                            : "bg-white text-gray-700 hover:bg-gray-50"
                                     }`}
                                 >
                                     {type.charAt(0).toUpperCase() +

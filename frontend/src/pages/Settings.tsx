@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-// import ThemeToggle from '../components/ThemeToggle';
 
 interface UserData {
     email: string;
@@ -16,7 +15,6 @@ export default function Settings() {
     const { currentUser, signOut } = useAuth();
     const [userData, setUserData] = useState<UserData | null>(null);
     const [error, setError] = useState<string | null>(null);
-    //const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -115,14 +113,6 @@ export default function Settings() {
                 >
                     Change Password
                 </Link>
-                {/* <div className="flex items-center justify-between rounded-lg border border-gray-300 px-4 py-2">
-                    <div className="text-sm font-medium text-gray-700">
-                        Dark Mode
-                    </div>
-                    <div>
-                        <ThemeToggle />
-                    </div>
-                </div> */}
             </div>
         </div>
     );
